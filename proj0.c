@@ -6,7 +6,7 @@
 extern int errno;
 
 void sourceToListing(char *, char *);
-void readFileLineByLine(FILE *, int, char **);
+char** readFileLineByLine(FILE *, int);
 int fileLineCount(FILE *);
 int fileLength(FILE *);
 
@@ -14,7 +14,6 @@ int main(int argc, char *argv[])
 {
 	if(argc == 3) 
 	{
-		puts("got arguments");
 		sourceToListing(argv[1],argv[2]);
 	}
 	else
@@ -34,25 +33,16 @@ void sourceToListing(char *sourcePath, char *listingPath)
 		FILE *listing = fopen(listingPath, "w");
 		if(listing != NULL) 
 		{
-			puts("about to read lines");
 			int numberLines = fileLineCount(src);
-			char *lines[numberLines];
-			readFileLineByLine(src, numberLines, lines);
-			puts("Got lines");
-		
+			char **lines = readFileLineByLine(src, numberLines);	
 			int i = 0;
+			//output lines of file to in form of:
+			//1:	int i = 0
 			while(i < numberLines) 
 			{
-				printf("line:%s\n", lines[i]);
+				fprintf(listing, "%d:\t%s\n", (i+1), lines[i]);
 				i++;
 			}
-		
-				//write to listing file
-				//fprintf(listing, "%d:\t%s\n", lineNumber, line);
-				//linePos = 0;
-				//memset(line, 0, MAX_LINE_LENGTH); //zero out array
-				//lineNumber++;
-			
 		}
 		else 
 		{
@@ -65,18 +55,18 @@ void sourceToListing(char *sourcePath, char *listingPath)
 	}
 }
 
-void readFileLineByLine(FILE *source, int lineCount, char **lines) 
+char **readFileLineByLine(FILE *source, int lineCount) 
 {
-	puts("entered readFileLineByLine");
 	//determine total file size of source
 	int srcLength = fileLength(source);
-	char line[MAX_LINE_LENGTH];
+	char **lines = malloc(sizeof(char) * lineCount * MAX_LINE_LENGTH);
 	int linePos = 0;
 	int filePos = 0;
 	int lineNumber = 0;
 	//iterate line by line 
 	while(filePos < srcLength) 
 	{
+		char *line = malloc(sizeof(char) * MAX_LINE_LENGTH);
 		//iterate character by character
 		//go to end of line or end of file
 		while(linePos < MAX_LINE_LENGTH && filePos < srcLength) 
@@ -94,10 +84,11 @@ void readFileLineByLine(FILE *source, int lineCount, char **lines)
 			linePos++;
 			filePos++;
 		}
-		strcpy(line, lines[lineNumber]);
+		lines[lineNumber] = line;
 		linePos = 0;
 		lineNumber++;
 	}
+	return lines;
 }
 
 int fileLineCount(FILE *src) 
