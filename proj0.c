@@ -40,7 +40,10 @@ void sourceToListing(char *sourcePath, char *listingPath)
 			//1:	int i = 0
 			while(i < numberLines) 
 			{
-				fprintf(listing, "%d:\t%s\n", (i+1), lines[i]);
+				if(i == numberLines - 1)
+					fprintf(listing, "%d:\t%sEOF", (i+1), lines[i]);
+				else 
+					fprintf(listing, "%d:\t%s\n", (i+1), lines[i]);
 				i++;
 			}
 		}
@@ -57,72 +60,41 @@ void sourceToListing(char *sourcePath, char *listingPath)
 
 char **readFileLineByLine(FILE *source, int lineCount) 
 {
-	//determine total file size of source
-	int srcLength = fileLength(source);
 	char **lines = malloc(sizeof(char) * lineCount * MAX_LINE_LENGTH);
-	int linePos = 0;
-	int filePos = 0;
+	lines[0] = malloc(sizeof(char) * MAX_LINE_LENGTH);
+	char charAtPos;
 	int lineNumber = 0;
-	//iterate line by line 
-	while(filePos < srcLength) 
+	int linePos = 0;
+	//iterate over each char and place it in the appropriate line
+	//stop at EOF
+	while(fscanf(source, "%c", &charAtPos) != EOF) 
 	{
-		char *line = malloc(sizeof(char) * MAX_LINE_LENGTH);
-		//iterate character by character
-		//go to end of line or end of file
-		while(linePos < MAX_LINE_LENGTH && filePos < srcLength) 
+		if(charAtPos == '\n') 
 		{
-			char charAtPos;
-			fscanf(source, "%c", &charAtPos);
-			if(charAtPos == '\n') 
-			{
-				linePos++;
-				filePos++;
-				break; //found new line
-			}	
-			//store char in line
-			line[linePos] = charAtPos;
-			linePos++;
-			filePos++;
+			//found new line
+			lineNumber++;
+			linePos = 0;
+			lines[lineNumber] = malloc(sizeof(char) * MAX_LINE_LENGTH);		
 		}
-		lines[lineNumber] = line;
-		linePos = 0;
-		lineNumber++;
+		else 
+		{
+			lines[lineNumber][linePos] = charAtPos;
+			linePos++;
+		}
 	}
 	return lines;
 }
 
 int fileLineCount(FILE *src) 
 {
-	int srcLength = fileLength(src);
-	int filePos = 0;
-	int linePos = 0;
+	char charAtPos;
 	int lineCount = 0;
-	//iterate line by line
-	while(filePos < srcLength) 
+	while(fscanf(src, "%c", &charAtPos) != EOF) 
 	{
-		//iterate character by character
-		//go to end of line or end of file
-		while(linePos < MAX_LINE_LENGTH && filePos < srcLength) 
-		{
-			char charAtPos;
-			fscanf(src, "%c", &charAtPos);
-			filePos++;
-			linePos++;
-			if(charAtPos == '\n')
-			{
-				break; //found new line
-			}		
-		}
-		linePos = 0;
-		lineCount++;
+		if(charAtPos == '\n')
+			lineCount++;
 	}
+	rewind(src);
 	return lineCount;
 }
-
-int fileLength(FILE *src) 
-{
-	fseek (src, 0, SEEK_END); //go to end
-	int srcLength = ftell (src); //get position at end
-	rewind (src);
-	return srcLength;
-}
+	
