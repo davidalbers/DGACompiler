@@ -10,6 +10,11 @@ struct FSA {
 	int state;	
 } fsa;
 
+struct node {
+	char *id;
+	struct node *next;
+} *root;
+
 extern int errno;
 
 
@@ -25,9 +30,11 @@ void relopMachine(char *);
 void realMachine(char *);
 void catchAllMachine(char *);
 void newLineMachine(char *);
+void addToSymbolTable(char *);
 
 int main(int argc, char *argv[]) 
 {
+	
 	if(argc == 3) 
 	{
 		sourceToListing(argv[1],argv[2]);
@@ -198,9 +205,9 @@ void idMachine(char *line) {
 				}
 				else {
 					fsa.f--;
-					//got an id
 					fsa.state = 0;
 					printf("got an id %s\n", id);
+					addToSymbolTable(id);
 					return;
 				}
 				break;
@@ -442,3 +449,33 @@ void catchAllMachine(char* line) {
 	fsa.state = 0;
 	printf("catchall read %c%d\n", c, fsa.f);
 }
+
+void addToSymbolTable(char* id) {
+	if(root == NULL) {
+		root = (struct node *) malloc(sizeof(struct node));
+		printf("id '%s' added to root of symbol table\n",id);
+		root->next = 0;
+		root->id = id;
+	}
+	else {
+		struct node *currNode = root;
+		if(!strcmp(id,root->id)) {
+			printf("id '%s' already exists in root of symbol table as '%s'\n",id,root->id);
+			return;
+		}
+		while(currNode->next != 0) {
+			currNode = currNode->next;
+			if(!strcmp(id,currNode->id)) {
+				printf("id '%s' already exists in symbol table\n",id);
+				return; //found id in table, don't add
+			}
+		}
+		//not found, add a new node to list
+		struct node *newNode = (struct node *) malloc(sizeof(struct node));
+		newNode->id = id;
+		newNode->next = 0;
+		printf("adding %s to symbol table\n",id);
+		currNode->next = newNode;
+	}
+}
+	
