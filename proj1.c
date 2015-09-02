@@ -236,3 +236,77 @@ void relopMachine(char* line) {
 		}	
 	}
 }
+
+
+void realMachine(char *line) {
+	char d[10] = {0};
+	char xx[5] = {0};
+	char yy[2] = {0};
+	int dCount = 0;
+	int xxCount = 0;
+	int yyCount = 0;
+	while(dCount < 10 && xxCount < 5 && yyCount < 2) {
+		char c = line[fsa.f];
+		fsa.f++;
+		switch(fsa.state) 
+		{
+			case 7:
+				if(isdigit(c)) {
+					d[dCount] = c;
+					dCount++;
+					fsa.state = 8;
+				}
+				else {
+					printf("real machine got error %c", c);
+					fsa.f--;
+					return;
+				}
+				break;
+			case 8:
+				if(isdigit(c)) {
+					d[dCount] = c;
+					dCount++;
+				}
+				else if(c == '.') {
+					fsa.state = 9;
+				}
+				else if(c == 'E') {
+					fsa.state = 11;
+				}
+				else {
+					printf("real machine got error %c", c);
+					fsa.f--;
+					return;
+				}
+				break;
+			case 9:
+				if(isdigit(c)) {
+					xx[xxCount] = c;
+					xxCount++;
+					fsa.state = 10;
+				}
+				else {
+					printf("real machine got error %c", c);
+				}
+				break;
+			case 10:
+				if(isdigit(c)) {
+					xx[xxCount] = c;
+					xxCount++;
+				}
+				else if(c == 'E') {
+					fsa.state = 11;
+				}
+				else {
+					printf("real machine got error %c", c);
+					fsa.f--;
+					return;
+				}
+			case 11:
+				if(isdigit(c)) {
+					yy[yyCount] = c;
+					yyCount++;
+				}
+		}
+	}
+}
