@@ -22,6 +22,9 @@ void idMachine(char *);
 void whitespaceMachine(char *);
 void getNextToken(char *);
 void relopMachine(char *);
+void realMachine(char *);
+void catchAllMachine(char *);
+void newLineMachine(char *);
 
 int main(int argc, char *argv[]) 
 {
@@ -92,6 +95,7 @@ char **readFileLineByLine(FILE *source, int lineCount)
 		if(charAtPos == '\n') 
 		{
 			//found new line
+			lines[lineNumber][linePos] = charAtPos;
 			lineNumber++;
 			linePos = 0;
 			lines[lineNumber] = malloc(sizeof(char) * MAX_LINE_LENGTH);		
@@ -133,6 +137,17 @@ void getNextToken(char *line) {
 			case 4:
 				relopMachine(line);
 				break;
+			case 7:
+				realMachine(line);
+				break;
+			case 15:
+				newLineMachine(line);
+				if(fsa.state == 0)
+					return;
+				break;
+			default:
+				catchAllMachine(line);
+				break;
 		}
 	}
 }
@@ -155,7 +170,7 @@ void whitespaceMachine(char *line) {
 }
 
 void idMachine(char *line) {
-	char id[10] = {0};
+	char *id = malloc(sizeof(char) * 10);
 	int idLength = 0;
 	while(fsa.f < MAX_LINE_LENGTH && idLength < 10) {
 		char c = line[fsa.f];
@@ -212,6 +227,7 @@ void relopMachine(char* line) {
 				else {
 					puts("relop: not a relop");
 					fsa.f--;
+					fsa.state = 7;
 					return;
 				}
 				break;
@@ -239,15 +255,18 @@ void relopMachine(char* line) {
 
 
 void realMachine(char *line) {
-	char d[10] = {0};
-	char xx[5] = {0};
-	char yy[2] = {0};
+	char *d = malloc(sizeof(char) * 10);
+	char *yy = malloc(sizeof(char) * 5);
+	char *zz = malloc(sizeof(char) * 2);
 	int dCount = 0;
-	int xxCount = 0;
 	int yyCount = 0;
-	while(dCount < 10 && xxCount < 5 && yyCount < 2) {
+	int zzCount = 0;
+	//assumed to be positive unless said otherwise
+	int negative = 0; 
+	while(fsa.f < MAX_LINE_LENGTH) {
 		char c = line[fsa.f];
 		fsa.f++;
+		// printf("%dreal machine read %c\n",fsa.state, c);
 		switch(fsa.state) 
 		{
 			case 7:
@@ -257,13 +276,20 @@ void realMachine(char *line) {
 					fsa.state = 8;
 				}
 				else {
-					printf("real machine got error %c", c);
+					printf("real machine got error1 %c\n",c);
+					//todo: this sends it to catchall, find a more intuitive way to do this
+					fsa.state = 15; 
 					fsa.f--;
 					return;
 				}
 				break;
 			case 8:
 				if(isdigit(c)) {
+					if(dCount >= 10) {
+						puts("real machine got error d too long");
+						fsa.state = 0;
+						return;
+					}
 					d[dCount] = c;
 					dCount++;
 				}
@@ -274,39 +300,124 @@ void realMachine(char *line) {
 					fsa.state = 11;
 				}
 				else {
-					printf("real machine got error %c", c);
+					printf("real machine got int %s\n", d);
 					fsa.f--;
+					fsa.state = 0;
 					return;
 				}
 				break;
 			case 9:
 				if(isdigit(c)) {
-					xx[xxCount] = c;
-					xxCount++;
+					yy[yyCount] = c;
+					yyCount++;
 					fsa.state = 10;
 				}
 				else {
-					printf("real machine got error %c", c);
+					fsa.f--;
+					printf("real machine got error2 %c\n", c);
+					fsa.state = 100;
+					return;
 				}
 				break;
 			case 10:
 				if(isdigit(c)) {
-					xx[xxCount] = c;
-					xxCount++;
+					if(yyCount >= 5) {
+						puts("real machine got error yy too long");
+						fsa.state = 0;
+						return;
+					}
+					yy[yyCount] = c;
+					yyCount++;
 				}
 				else if(c == 'E') {
 					fsa.state = 11;
 				}
 				else {
-					printf("real machine got error %c", c);
+					printf("real machine got decimal %s.%s\n", d,yy);
+					fsa.f--;
+					fsa.state = 0;
+					return;
+				}
+				break;
+			case 11:
+				if(isdigit(c)) {
+					fsa.state = 12;
+					zz[zzCount] = c;
+					zzCount++;
+				}
+				else if(c == '+' || c == '-') {
+					if(c == '-')
+						negative = 1;
+					fsa.state = 14;
+
+				}
+				else {
+					printf("real machine got error3 %c\n", c);
+					fsa.state = 100;
 					fsa.f--;
 					return;
 				}
-			case 11:
+				break;
+			case 12:
 				if(isdigit(c)) {
-					yy[yyCount] = c;
-					yyCount++;
+					fsa.state = 13;
+					zz[zzCount] = c;
+					zzCount++;
 				}
+				else {
+					fsa.f--;
+					fsa.state = 0;
+					printf("real machine got real %s.%se%s\n",d,yy,zz);
+					return;
+				}
+				break;
+			case 13:
+				if(isdigit(c)) {
+					puts("real machine got error zz too long");
+					fsa.state = 0;
+					return;
+				}
+				else {
+					printf("real machine got real %s.%se%s\n",d,yy,zz);
+					fsa.f--;
+					fsa.state = 0;
+					return;
+				}
+				break;
+			case 14:
+				if(isdigit(c)) {
+					zz[zzCount] = c;
+					zzCount++;
+					fsa.state = 12;
+				}
+				else {
+					printf("real machine got error5 %c\n", c);
+					fsa.state = 100;
+					fsa.f--;
+					return;
+				}
+				break;
 		}
 	}
+}
+
+void newLineMachine(char* line) {
+	char c = line[fsa.f];
+	fsa.f++;
+	if(c == '\n') {
+		puts("found new line");
+		fsa.state = 0;
+	}
+	else {
+		printf("not a new line '%c'",c);
+		fsa.f--;
+		fsa.state = 100;
+	}
+}
+
+void catchAllMachine(char* line) {
+	char c = line[fsa.f];
+	fsa.f++;
+	fsa.state = 0;
+	printf("catchall read %c\n", c);
 }
