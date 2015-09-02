@@ -53,9 +53,10 @@ void sourceToListing(char *sourcePath, char *listingPath)
 			char **lines = readFileLineByLine(src, numberLines);
 				
 			int i = 0;
-			getNextToken(lines[0]);
+			
 			while(i < numberLines) 
 			{
+				getNextToken(lines[i]);
 				i++;
 			}
 			i = 0;
@@ -96,6 +97,7 @@ char **readFileLineByLine(FILE *source, int lineCount)
 		{
 			//found new line
 			lines[lineNumber][linePos] = charAtPos;
+			printf("got new line '%c'\n", charAtPos);
 			lineNumber++;
 			linePos = 0;
 			lines[lineNumber] = malloc(sizeof(char) * MAX_LINE_LENGTH);		
@@ -156,7 +158,7 @@ void whitespaceMachine(char *line) {
 	while(fsa.f < MAX_LINE_LENGTH) { 
 		char ws = line[fsa.f];
 		fsa.f++;
-		if(ws == ' ' || ws == '\t' || ws == '\n') {
+		if(ws == ' ' || ws == '\t') {
 			fsa.state = 1;
 		}
 		else {
@@ -186,7 +188,6 @@ void idMachine(char *line) {
 				else {
 					fsa.f--;
 					fsa.state = 4;
-					printf("id machine block %s\n", id);
 					return;
 				}
 				break;
@@ -220,12 +221,10 @@ void relopMachine(char* line) {
 					fsa.state = 6;
 				else if(relop == '=') {
 					puts("relop found equals");
-					fsa.f--;
 					fsa.state = 0;
 					return;
 				}
 				else {
-					puts("relop: not a relop");
 					fsa.f--;
 					fsa.state = 7;
 					return;
@@ -236,17 +235,19 @@ void relopMachine(char* line) {
 					puts("relop found <=");
 				else if(relop == '>') 
 					puts("relop found <>");
-				else 
+				else {
 					puts("relop found <");
-				fsa.f--;
+					fsa.f--;
+				}
 				fsa.state = 0;
 				return;
 			case 6:
 				if(relop == '=') 
 					puts("relop found >=");
-				else 
+				else {
 					puts("relop found >");
-				fsa.f--;
+					fsa.f--;
+				}
 				fsa.state = 0;
 				return;	
 		}	
@@ -261,6 +262,7 @@ void realMachine(char *line) {
 	int dCount = 0;
 	int yyCount = 0;
 	int zzCount = 0;
+	int lengthError = 0;
 	//assumed to be positive unless said otherwise
 	int negative = 0; 
 	while(fsa.f < MAX_LINE_LENGTH) {
@@ -286,9 +288,8 @@ void realMachine(char *line) {
 			case 8:
 				if(isdigit(c)) {
 					if(dCount >= 10) {
-						puts("real machine got error d too long");
-						fsa.state = 0;
-						return;
+						
+						lengthError = 1;
 					}
 					d[dCount] = c;
 					dCount++;
@@ -300,7 +301,13 @@ void realMachine(char *line) {
 					fsa.state = 11;
 				}
 				else {
-					printf("real machine got int %s\n", d);
+					if(lengthError) {
+						puts("real machine got length error");
+					}
+					else {
+						printf("real machine got int %s\n", d);
+						
+					}
 					fsa.f--;
 					fsa.state = 0;
 					return;
@@ -322,18 +329,24 @@ void realMachine(char *line) {
 			case 10:
 				if(isdigit(c)) {
 					if(yyCount >= 5) {
-						puts("real machine got error yy too long");
-						fsa.state = 0;
-						return;
+						lengthError = 1;
 					}
-					yy[yyCount] = c;
-					yyCount++;
+					else {
+						yy[yyCount] = c;
+						yyCount++;
+					}
 				}
 				else if(c == 'E') {
 					fsa.state = 11;
 				}
 				else {
-					printf("real machine got decimal %s.%s\n", d,yy);
+					if(lengthError) {
+						puts("real machine got length error");
+					}
+					else {
+						printf("real machine got decimal %s.%s\n", d,yy);
+						
+					}
 					fsa.f--;
 					fsa.state = 0;
 					return;
@@ -365,20 +378,28 @@ void realMachine(char *line) {
 					zzCount++;
 				}
 				else {
+					if(lengthError) {
+						puts("real machine got length error");
+					}
+					else {
+						printf("real machine got real %s.%se%s\n",d,yy,zz);
+					}
 					fsa.f--;
 					fsa.state = 0;
-					printf("real machine got real %s.%se%s\n",d,yy,zz);
 					return;
 				}
 				break;
 			case 13:
 				if(isdigit(c)) {
-					puts("real machine got error zz too long");
-					fsa.state = 0;
-					return;
+					lengthError = 1;
 				}
 				else {
-					printf("real machine got real %s.%se%s\n",d,yy,zz);
+					if(lengthError) {
+						puts("real machine got length error");
+					}
+					else {
+						printf("real machine got real %s.%se%s\n",d,yy,zz);
+					}
 					fsa.f--;
 					fsa.state = 0;
 					return;
@@ -407,9 +428,9 @@ void newLineMachine(char* line) {
 	if(c == '\n') {
 		puts("found new line");
 		fsa.state = 0;
+		fsa.f = 0;	
 	}
 	else {
-		printf("not a new line '%c'",c);
 		fsa.f--;
 		fsa.state = 100;
 	}
@@ -419,5 +440,5 @@ void catchAllMachine(char* line) {
 	char c = line[fsa.f];
 	fsa.f++;
 	fsa.state = 0;
-	printf("catchall read %c\n", c);
+	printf("catchall read %c%d\n", c, fsa.f);
 }
