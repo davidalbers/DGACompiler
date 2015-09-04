@@ -3,17 +3,32 @@
 #include <string.h>
 #include <ctype.h>
 #define MAX_LINE_LENGTH 72
+#define RESERVED 0;
+#define ID 30;
+#define NUM 31;
+#define RELOP 32;
+#define ADDOP 33;
+#define MULOP 34;
+#define ASSIGNOP 35;
+
+struct token {
+	int tokenName;
+	char *attribute;
+};
 
 struct FSA {
 	int f;
 	int b;
 	int state;	
+	struct token *currToken;
 } fsa;
 
 struct node {
 	char *id;
 	struct node *next;
 } *resWordsRoot, *symbolTableRoot;
+
+
 
 extern int errno;
 
@@ -193,6 +208,9 @@ void getNextToken(char *line) {
 			case 18:
 				assignopMachine(line);
 				break;
+			case 101:
+				printf("got token name: '%d' attribute: '%s'\n",fsa.currToken->tokenName,fsa.currToken->attribute);
+				return;
 			default:
 				catchAllMachine(line);
 				break;
@@ -244,13 +262,21 @@ void idMachine(char *line) {
 				}
 				else {
 					fsa.f--;
-					fsa.state = 0;
+					fsa.state = 101;
 					printf("got an id %s\n", id);
 					if(checkInResWordTable(id)) {
 						printf("id is a reserved word '%s'\n", id);
+						struct token idToken;
+						idToken.tokenName = RESERVED;
+						idToken.attribute = id;
+						fsa.currToken = &idToken;
 						return;
 					}
 					addToSymbolTable(id);
+					struct token idToken;
+					idToken.tokenName = ID;
+					idToken.attribute = id;
+					fsa.currToken = &idToken;
 					return;
 				}
 				break;
@@ -270,8 +296,11 @@ void relopMachine(char* line) {
 				else if(relop == '>') 
 					fsa.state = 6;
 				else if(relop == '=') {
-					puts("relop found equals");
-					fsa.state = 0;
+					struct token relopToken;
+					relopToken.tokenName = RELOP;
+					relopToken.attribute = relop;
+					fsa.currToken = &relopToken;
+					fsa.state = 101;
 					return;
 				}
 				else {
@@ -281,24 +310,24 @@ void relopMachine(char* line) {
 				}
 				break;
 			case 5:
-				if(relop == '=') 
-					puts("relop found <=");
-				else if(relop == '>') 
-					puts("relop found <>");
-				else {
-					puts("relop found <");
-					fsa.f--;
-				}
-				fsa.state = 0;
+				//any character here results in a relop
+				
+				if(relop != '=' && relop != '>') 
+					fsa.f--; //'<' + another, non relop, character so just <
+				struct token relopToken;
+				relopToken.tokenName = RELOP;
+				relopToken.attribute = relop;
+				fsa.currToken = &relopToken;
+				fsa.state = 101;
 				return;
 			case 6:
-				if(relop == '=') 
-					puts("relop found >=");
-				else {
-					puts("relop found >");
-					fsa.f--;
-				}
-				fsa.state = 0;
+				if(relop != '=') 
+					fsa.f--;//'>'+ another, non relop, character so just >
+				struct token relopToken;
+				relopToken.tokenName = RELOP;
+				relopToken.attribute = relop;
+				fsa.currToken = &relopToken;
+				fsa.state = 101;
 				return;	
 		}	
 	}
