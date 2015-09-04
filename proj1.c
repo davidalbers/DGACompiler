@@ -13,7 +13,7 @@ struct FSA {
 struct node {
 	char *id;
 	struct node *next;
-} *root;
+} *resWordsRoot, *symbolTableRoot;
 
 extern int errno;
 
@@ -450,17 +450,46 @@ void catchAllMachine(char* line) {
 	printf("catchall read %c%d\n", c, fsa.f);
 }
 
-void addToSymbolTable(char* id) {
-	if(root == NULL) {
-		root = (struct node *) malloc(sizeof(struct node));
-		printf("id '%s' added to root of symbol table\n",id);
-		root->next = 0;
-		root->id = id;
+void addToReservedWords(char *id) {
+	if(resWordsRoot == NULL) {
+		resWordsRoot = (struct node *) malloc(sizeof(struct node));
+		printf("id '%s' added to resWordsRoot of symbol table\n",id);
+		resWordsRoot->next = 0;
+		resWordsRoot->id = id;
 	}
 	else {
-		struct node *currNode = root;
-		if(!strcmp(id,root->id)) {
-			printf("id '%s' already exists in root of symbol table as '%s'\n",id,root->id);
+		struct node *currNode = resWordsRoot;
+		if(!strcmp(id,resWordsRoot->id)) {
+			printf("id '%s' already exists in resWordsRoot of symbol table as '%s'\n",id,resWordsRoot->id);
+			return;
+		}
+		while(currNode->next != 0) {
+			currNode = currNode->next;
+			if(!strcmp(id,currNode->id)) {
+				printf("id '%s' already exists in symbol table\n",id);
+				return; //found id in table, don't add
+			}
+		}
+		//not found, add a new node to list
+		struct node *newNode = (struct node *) malloc(sizeof(struct node));
+		newNode->id = id;
+		newNode->next = 0;
+		printf("adding %s to symbol table\n",id);
+		currNode->next = newNode;
+	}
+}
+
+void addToSymbolTable(char* id) {
+	if(symbolTableRoot == NULL) {
+		symbolTableRoot = (struct node *) malloc(sizeof(struct node));
+		printf("id '%s' added to symbolTableRoot of symbol table\n",id);
+		symbolTableRoot->next = 0;
+		symbolTableRoot->id = id;
+	}
+	else {
+		struct node *currNode = symbolTableRoot;
+		if(!strcmp(id,symbolTableRoot->id)) {
+			printf("id '%s' already exists in symbolTableRoot of symbol table as '%s'\n",id,symbolTableRoot->id);
 			return;
 		}
 		while(currNode->next != 0) {
