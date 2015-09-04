@@ -31,12 +31,14 @@ void realMachine(char *);
 void catchAllMachine(char *);
 void newLineMachine(char *);
 void addToSymbolTable(char *);
+void loadReservedWords(char *);
 
 int main(int argc, char *argv[]) 
 {
 	
 	if(argc == 3) 
 	{
+		loadReservedWords("reservedWords.txt");
 		sourceToListing(argv[1],argv[2]);
 	}
 	else
@@ -129,6 +131,29 @@ int fileLineCount(FILE *src)
 	}
 	rewind(src);
 	return lineCount;
+}
+
+void loadReservedWords(char *pathToReservedWords) {
+	FILE *reservedWords = fopen(pathToReservedWords, "r"); 
+	if(reservedWords != NULL){
+		char c = 0;
+		int index = 0;
+		char *resWord = malloc(sizeof(char) * 32);
+		while(fscanf(reservedWords,"%c",&c) != EOF ) {
+			if(c == ',' || c == '\n' && index > 0) {
+				addToSymbolTable(resWord);
+				resWord = malloc(sizeof(char) * 32);
+				index = 0;
+			}
+			else if (c != ' '){
+				resWord[index] = c;
+				index++;
+			}
+		}
+	}
+	else {
+		perror("Could not open reserved words file");
+	}	
 }
 	
 
