@@ -32,6 +32,11 @@ void catchAllMachine(char *);
 void newLineMachine(char *);
 void addToSymbolTable(char *);
 void loadReservedWords(char *);
+void addToReservedWords(char *);
+int checkInResWordTable(char *);
+void addopMachine(char *);
+void mulopMachine(char *);
+void assignopMachine(char *);
 
 int main(int argc, char *argv[]) 
 {
@@ -140,8 +145,8 @@ void loadReservedWords(char *pathToReservedWords) {
 		int index = 0;
 		char *resWord = malloc(sizeof(char) * 32);
 		while(fscanf(reservedWords,"%c",&c) != EOF ) {
-			if(c == ',' || c == '\n' && index > 0) {
-				addToSymbolTable(resWord);
+			if( (c == ',' || c == '\n') && index > 0) {
+				addToReservedWords(resWord);
 				resWord = malloc(sizeof(char) * 32);
 				index = 0;
 			}
@@ -178,6 +183,15 @@ void getNextToken(char *line) {
 				newLineMachine(line);
 				if(fsa.state == 0)
 					return;
+				break;
+			case 16:
+				addopMachine(line);
+				break;
+			case 17:
+				mulopMachine(line);
+				break;
+			case 18:
+				assignopMachine(line);
 				break;
 			default:
 				catchAllMachine(line);
@@ -232,6 +246,10 @@ void idMachine(char *line) {
 					fsa.f--;
 					fsa.state = 0;
 					printf("got an id %s\n", id);
+					if(checkInResWordTable(id)) {
+						printf("id is a reserved word '%s'\n", id);
+						return;
+					}
 					addToSymbolTable(id);
 					return;
 				}
@@ -310,8 +328,6 @@ void realMachine(char *line) {
 					fsa.state = 8;
 				}
 				else {
-					printf("real machine got error1 %c\n",c);
-					//todo: this sends it to catchall, find a more intuitive way to do this
 					fsa.state = 15; 
 					fsa.f--;
 					return;
@@ -464,8 +480,74 @@ void newLineMachine(char* line) {
 	}
 	else {
 		fsa.f--;
-		fsa.state = 100;
+		fsa.state = 16;
 	}
+}
+
+void addopMachine(char* line) {
+	char c = line[fsa.f];
+	fsa.f++;
+	if(c == '+') {
+		puts("found +");
+		fsa.state = 0;
+		return;
+	}
+	else if(c == '-') {
+		puts("found -");
+		fsa.state = 0;
+		return;
+	}
+	//'or' is also an addop but it is a reserved word also
+	//so it would have already been found
+	fsa.f--;
+	fsa.state = 17;
+}
+
+void assignopMachine(char* line) {
+	int count = 0;
+
+	while(fsa.f < MAX_LINE_LENGTH && count < 2) {
+		count++;
+		char c = line[fsa.f];
+		fsa.f++;
+		if(count == 1 && c != ':') {
+			//first char has to be ':' if not, exit
+			fsa.f--;
+			fsa.state = 19;
+			return; 
+		}
+		if(count == 2 && c != '=') {
+			//second char has to be '=' if not, exit
+			fsa.f--;
+			fsa.state = 19;
+			return;
+		}
+		else if(count == 2 && c == '=') {
+			//if second char is '=', return token
+			fsa.state = 0;
+			puts("found assignop");
+			return;
+		}
+	}
+}
+
+void mulopMachine(char *line) {
+	char c = line[fsa.f];
+	fsa.f++;
+	if(c == '*') {
+		puts("found *");
+		fsa.state = 0;
+		return;
+	}
+	else if(c == '/') {
+		puts("found /");
+		fsa.state = 0;
+		return;
+	}
+	//'div', 'mod', and 'and' are also mulop but are reserved words also
+	//so they would have already been found
+	fsa.f--;
+	fsa.state = 18;
 }
 
 void catchAllMachine(char* line) {
@@ -478,14 +560,14 @@ void catchAllMachine(char* line) {
 void addToReservedWords(char *id) {
 	if(resWordsRoot == NULL) {
 		resWordsRoot = (struct node *) malloc(sizeof(struct node));
-		printf("id '%s' added to resWordsRoot of symbol table\n",id);
+		printf("id '%s' added to root of symbol table\n",id);
 		resWordsRoot->next = 0;
 		resWordsRoot->id = id;
 	}
 	else {
 		struct node *currNode = resWordsRoot;
 		if(!strcmp(id,resWordsRoot->id)) {
-			printf("id '%s' already exists in resWordsRoot of symbol table as '%s'\n",id,resWordsRoot->id);
+			printf("id '%s' already exists in root of symbol table as '%s'\n",id,resWordsRoot->id);
 			return;
 		}
 		while(currNode->next != 0) {
@@ -504,7 +586,24 @@ void addToReservedWords(char *id) {
 	}
 }
 
+int checkInResWordTable(char *id) {
+	struct node *currNode = resWordsRoot;
+	if(!strcmp(id,resWordsRoot->id)) {
+		printf("id '%s' already exists in reserved word table as '%s'\n",id,resWordsRoot->id);
+		return 1;
+	}
+	while(currNode->next != 0) {
+		currNode = currNode->next;
+		if(!strcmp(id,currNode->id)) {
+			printf("id '%s' already exists in reserved word table\n",id);
+			return 1; //found id in table, don't add
+		}
+	}
+	return 0; //not found
+}
+
 void addToSymbolTable(char* id) {
+
 	if(symbolTableRoot == NULL) {
 		symbolTableRoot = (struct node *) malloc(sizeof(struct node));
 		printf("id '%s' added to symbolTableRoot of symbol table\n",id);
