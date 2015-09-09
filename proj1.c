@@ -15,6 +15,9 @@
 #define UNRECOGNIZEDNUM 3;
 #define DECIMALTOOLONG 4;
 #define REALTOOLONG 5;
+#define LEADINGZEROES 6;
+#define LEADINGZEROESEXP 7;
+#define TRAILINGZERO 8;
 #define LESSTHAN 0;
 #define LESSTHANEQUAL 1;
 #define NOTEQUAL 2;
@@ -76,6 +79,7 @@ int checkInResWordTable(char *);
 void addopMachine(char *);
 void mulopMachine(char *);
 void assignopMachine(char *);
+void intMachine(char *);
 
 int main(int argc, char *argv[]) 
 {
@@ -122,7 +126,7 @@ void sourceToListing(char *sourcePath, char *listingPath)
 				if(i == numberLines - 1)
 					printf("%d:\t%sEOF", (i+1), lines[i]);
 				else 
-					printf("%d:\t%s\n", (i+1), lines[i]);
+					printf("%d:\t%s", (i+1), lines[i]);
 				i++;
 			}
 		}
@@ -152,7 +156,6 @@ char **readFileLineByLine(FILE *source, int lineCount)
 		{
 			//found new line
 			lines[lineNumber][linePos] = charAtPos;
-			printf("got new line '%c'\n", charAtPos);
 			lineNumber++;
 			linePos = 0;
 			lines[lineNumber] = malloc(sizeof(char) * MAX_LINE_LENGTH);		
@@ -210,35 +213,48 @@ int getNextToken(char *line) {
 		switch(fsa.state) 
 		{
 			case 0:
+				// puts("whitespaceMachine");
 				whitespaceMachine(line);
 				break;
 			case 2:
+				// puts("idMachine");
 				idMachine(line);
 				break;
 			case 4:
+				// puts("relopMachine");
 				relopMachine(line);
 				break;
 			case 7:
+				// puts("realMachine");
 				realMachine(line);
 				break;
 			case 15:
+				// puts("newLineMachine");
 				newLineMachine(line);
 				if(fsa.state == 0)
 					return 1;
 				break;
 			case 16:
+				// puts("addop machine");
 				addopMachine(line);
 				break;
 			case 17:
+				// puts("mulopMachine");
 				mulopMachine(line);
 				break;
 			case 18:
+				// puts("assignop machine");
 				assignopMachine(line);
+				break;
+			case 20:
+				// puts("int machine");
+				intMachine(line);
 				break;
 			case 101:
 				//seg fault if try to read attrString and there wasn't one
 				//only read applicable type for token
 				//theres probably a better way than >= 32
+				fsa.b = fsa.f;
 				if(fsa.currToken->tokenName >= 32)
 					printf("got token name: '%d' attribute:  '%d'\n",fsa.currToken->tokenName,fsa.currToken->attribute->attrInt);
 				else 
@@ -255,9 +271,10 @@ int getNextToken(char *line) {
 void whitespaceMachine(char *line) {
 	while(fsa.f < MAX_LINE_LENGTH) { 
 		char ws = line[fsa.f];
-		fsa.f++;
+		fsa.f++;	
 		if(ws == ' ' || ws == '\t') {
 			fsa.state = 1;
+			fsa.b = fsa.f;
 		}
 		else {
 			//block
@@ -386,7 +403,7 @@ void relopMachine(char* line) {
 
 
 void realMachine(char *line) {
-	char *d = malloc(sizeof(char) * 10);
+	char *d = malloc(sizeof(char) * 5);
 	char *yy = malloc(sizeof(char) * 5);
 	char *zz = malloc(sizeof(char) * 2);
 	char *num = malloc(sizeof(char) * 17);
@@ -398,6 +415,11 @@ void realMachine(char *line) {
 	int realLengthError = 0;
 	//assumed to be positive unless said otherwise
 	int negative = 0; 
+	int leadingZero = 0;
+	int leadingZeroError = 0;
+	int zzLeadingZero = 0;
+	int zzLeadingZeroError = 0;
+	int yyTrailingZero = 0;
 	while(fsa.f < MAX_LINE_LENGTH) {
 		char c = line[fsa.f];
 		// printf("realMachine got '%c'\n",c);
@@ -411,6 +433,8 @@ void realMachine(char *line) {
 					d[dCount] = c;
 					dCount++;
 					fsa.state = 8;
+					if(c == '0')
+						leadingZero = 1;
 				}
 				else {
 					fsa.state = 15; 
@@ -420,11 +444,15 @@ void realMachine(char *line) {
 				break;
 			case 8:
 				if(isdigit(c)) {
-					if(dCount >= 10) {
+					dCount++;
+					if(dCount > 5) {
 						intLengthError = 1;
 					}
-					d[dCount] = c;
-					dCount++;
+					else {
+						if(leadingZero) //leading zero + anything else is an error
+							leadingZeroError = 1;
+						d[dCount - 1] = c;
+					}
 				}
 				else if(c == '.') {
 					fsa.state = 9;
@@ -433,25 +461,8 @@ void realMachine(char *line) {
 					fsa.state = 11;
 				}
 				else {
-					if(intLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
-						attr.attrInt = INTTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
-					}
-					else {
-						struct token numToken;
-						numToken.tokenName = NUM;
-						union Attribute attr;
-						attr.attrString = d;
-						numToken.attribute = &attr;
-						fsa.currToken = &numToken;
-						fsa.state = 101;
-					}
-					fsa.f--;
+					fsa.state = 20; //go to intmachine
+					fsa.f = fsa.b;
 					return;
 				}
 				break;
@@ -475,49 +486,53 @@ void realMachine(char *line) {
 				break;
 			case 10:
 				if(isdigit(c)) {
-					if(yyCount >= 5) {
+					yyCount++;
+					if(c == '0')
+						yyTrailingZero = 1;
+					else
+						yyTrailingZero = 0;
+					if(yyCount > 5) {
 						decimalLengthError = 1;
 					}
 					else {
-						yy[yyCount] = c;
-						yyCount++;
+						yy[yyCount - 1] = c;
 					}
 				}
 				else if(c == 'E') {
 					fsa.state = 11;
 				}
 				else {
+					struct token numToken;
+					union Attribute attr;
 					if(intLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						
+						numToken.tokenName = LEXERR;
 						attr.attrInt = INTTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
+	
 					}
 					else if(decimalLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						numToken.tokenName = LEXERR;
 						attr.attrInt = DECIMALTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
+					}
+					else if (leadingZeroError) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = LEADINGZEROES;
+					}
+					else if(yyTrailingZero) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = TRAILINGZERO;
 					}
 					else {
-						struct token numToken;
 						numToken.tokenName = NUM;
-						union Attribute attr;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
 						attr.attrString = num;
-						numToken.attribute = &attr;
-						fsa.currToken = &numToken;
-						fsa.state = 101;
 				
 					}
+					numToken.attribute = &attr;
+					fsa.currToken = &numToken;
+					fsa.state = 101;
 					fsa.f--;
 					return;
 				}
@@ -526,6 +541,8 @@ void realMachine(char *line) {
 				if(isdigit(c)) {
 					fsa.state = 12;
 					zz[zzCount] = c;
+					if(c == '0')
+						zzLeadingZero = 1;
 					zzCount++;
 				}
 				else if(c == '+' || c == '-') {
@@ -548,46 +565,44 @@ void realMachine(char *line) {
 				break;
 			case 12:
 				if(isdigit(c)) {
+					if(zzLeadingZero) {
+						zzLeadingZeroError = 1;
+					}
 					fsa.state = 13;
 					zz[zzCount] = c;
 					zzCount++;
 				}
 				else {
+					struct token numToken;
+					union Attribute attr;
 					if(intLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						numToken.tokenName = LEXERR;
 						attr.attrInt = INTTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
-		
 					}
 					else if(decimalLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						numToken.tokenName = LEXERR;
 						attr.attrInt = DECIMALTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
-			
+					}
+					else if (leadingZeroError) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = LEADINGZEROES;
+					}
+					else if(yyTrailingZero) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = TRAILINGZERO;
 					}
 					else {
-						struct token numToken;
 						numToken.tokenName = NUM;
-						union Attribute attr;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
 						strcat(num,"E");
 						strcat(num,zz);
 						attr.attrString = num;
-						numToken.attribute = &attr;
-						fsa.currToken = &numToken;
-						fsa.state = 101;
-			
 					}
+					numToken.attribute = &attr;
+					fsa.currToken = &numToken;
+					fsa.state = 101;
 					fsa.f--;
 					return;
 				}
@@ -597,50 +612,44 @@ void realMachine(char *line) {
 					realLengthError = 1;
 				}
 				else {
+					struct token numToken;
+					union Attribute attr;
 					if(intLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						numToken.tokenName = LEXERR;
 						attr.attrInt = INTTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
-					
 					}
 					else if(decimalLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						numToken.tokenName = LEXERR;
 						attr.attrInt = DECIMALTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
-				
+					}
+					else if (leadingZeroError) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = LEADINGZEROES;
 					}
 					else if(realLengthError) {
-						struct token errToken;
-						errToken.tokenName = LEXERR;
-						union Attribute attr;
+						numToken.tokenName = LEXERR;
 						attr.attrInt = REALTOOLONG;
-						errToken.attribute = &attr;
-						fsa.currToken = &errToken;
-						fsa.state = 101;
+					}
+					else if(zzLeadingZeroError) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = LEADINGZEROESEXP;
+					}
+					else if(yyTrailingZero) {
+						numToken.tokenName = LEXERR;
+						attr.attrInt = TRAILINGZERO;
 					}
 					else {
-						struct token numToken;
 						numToken.tokenName = NUM;
-						union Attribute attr;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
 						strcat(num,"E");
 						strcat(num,zz);
 						attr.attrString = num;
-						numToken.attribute = &attr;
-						fsa.currToken = &numToken;
-						fsa.state = 101;
-
 					}
+					numToken.attribute = &attr;
+					fsa.currToken = &numToken;
+					fsa.state = 101;
 					fsa.f--;
 					return;
 				}
@@ -649,6 +658,8 @@ void realMachine(char *line) {
 				if(isdigit(c)) {
 					zz[zzCount] = c;
 					zzCount++;
+					if(c == '0')
+						zzLeadingZero = 1;
 					fsa.state = 12;
 				}
 				else {
@@ -672,9 +683,9 @@ void newLineMachine(char* line) {
 	// printf("newLine got '%c'\n",c);
 	fsa.f++;
 	if(c == '\n') {
-		puts("found new line");
 		fsa.state = 0;
 		fsa.f = 0;	
+		fsa.b = 0;
 	}
 	else {
 		fsa.f--;
@@ -773,12 +784,73 @@ void mulopMachine(char *line) {
 	fsa.state = 18;
 }
 
+void intMachine(char *line) {
+	int leadingZero = 0;
+	int leadingZeroError = 0;
+	int length = 0;
+	int maxLength = 10;
+	char *num = malloc(sizeof(char) * maxLength);
+	while(fsa.f < MAX_LINE_LENGTH) {
+		char d = line[fsa.f];
+		fsa.f++;
+		if(fsa.state == 20) {
+			if(isdigit(d)) {
+				num[length] = d;
+				length++;
+				fsa.state = 21;
+				if(d == '0') 
+					leadingZero = 1;
+			}
+			else {
+				fsa.state = 22;
+				fsa.f--;
+				puts("int machine fail");
+				return;
+			}
+		}
+		else if(fsa.state == 21) {
+			if(isdigit(d)) {
+				length++;
+				if(length <= maxLength) {
+					num[length - 1] = d;
+					//leading zero followed by anything else is an error
+					if(leadingZero) 
+						leadingZeroError = 1;
+				}
+			}
+			else {
+				fsa.state = 101;
+				fsa.f--;
+				struct token intToken;
+				union Attribute attr;
+				if(length > maxLength) {
+					intToken.tokenName = LEXERR;
+					attr.attrInt = INTTOOLONG;
+				}
+				else if(leadingZeroError) {
+					intToken.tokenName = LEXERR;
+					attr.attrInt = LEADINGZEROES;
+				}
+				else {
+					intToken.tokenName = NUM;
+					attr.attrString = num;
+				}
+				intToken.attribute = &attr;
+				fsa.currToken = &intToken;
+				return;
+			}
+		}
+	}
+} 
+
 void catchAllMachine(char* line) {
 	char c = line[fsa.f];
 	fsa.f++;
 	fsa.state = 0;
 	printf("catchall read %c%d\n", c, fsa.f);
 }
+
+
 
 void addToReservedWords(char *id) {
 	if(resWordsRoot == NULL) {
