@@ -3,35 +3,35 @@
 #include <string.h>
 #include <ctype.h>
 #define MAX_LINE_LENGTH 72
-#define RESERVED 0;
-#define ID 30;
-#define NUM 31;
-#define RELOP 32;
-#define ADDOP 33;
-#define MULOP 34;
-#define ASSIGNOP 35;
-#define LEXERR 99;
-#define INTTOOLONG 2;
-#define UNRECOGNIZEDNUM 3;
-#define DECIMALTOOLONG 4;
-#define REALTOOLONG 5;
-#define LEADINGZEROES 6;
-#define LEADINGZEROESEXP 7;
-#define TRAILINGZERO 8;
-#define LESSTHAN 0;
-#define LESSTHANEQUAL 1;
-#define NOTEQUAL 2;
-#define GREATERTHAN 3;
-#define GREATERTHANEQUAL 4;
-#define EQUAL 5;
-#define ADD 0;
-#define SUBTRACT 1;
-#define OR 2;
-#define MULTIPLY 0;
-#define DIVIDE 1; 
-#define DIV 2;
-#define MOD 3;
-#define AND 4;
+#define RESERVED 0
+#define ID 30
+#define NUM 31
+#define RELOP 32
+#define ADDOP 33
+#define MULOP 34
+#define ASSIGNOP 35
+#define LEXERR 99
+#define INTTOOLONG 2
+#define UNRECOGNIZEDNUM 3
+#define DECIMALTOOLONG 4
+#define REALTOOLONG 5
+#define LEADINGZEROES 6
+#define LEADINGZEROESEXP 7
+#define TRAILINGZERO 8
+#define LESSTHAN 9
+#define LESSTHANEQUAL 10
+#define NOTEQUAL 11
+#define GREATERTHAN 12
+#define GREATERTHANEQUAL 13
+#define EQUAL 14
+#define ADD 15
+#define SUBTRACT 16
+#define OR 17
+#define MULTIPLY 18
+#define DIVIDE 19
+#define DIV 20
+#define MOD 21
+#define AND 22
 
 union Attribute {
 	char *attrString;
@@ -80,6 +80,8 @@ void addopMachine(char *);
 void mulopMachine(char *);
 void assignopMachine(char *);
 void intMachine(char *);
+char *tokenNameToString(int);
+char *attributeToString(int);
 
 int main(int argc, char *argv[]) 
 {
@@ -113,20 +115,10 @@ void sourceToListing(char *sourcePath, char *listingPath)
 			
 			while(i < numberLines) 
 			{
+				printf("%d:\t%s",(i+1), lines[i]);
 				while(getNextToken(lines[i]) == 0) {
 
 				}
-				i++;
-			}
-			i = 0;
-			//output lines of file to in form of:
-			//1:	int i = 0
-			while(i < numberLines) 
-			{
-				if(i == numberLines - 1)
-					printf("%d:\t%sEOF", (i+1), lines[i]);
-				else 
-					printf("%d:\t%s", (i+1), lines[i]);
 				i++;
 			}
 		}
@@ -256,9 +248,9 @@ int getNextToken(char *line) {
 				//theres probably a better way than >= 32
 				fsa.b = fsa.f;
 				if(fsa.currToken->tokenName >= 32)
-					printf("got token name: '%d' attribute:  '%d'\n",fsa.currToken->tokenName,fsa.currToken->attribute->attrInt);
+					printf("got token name: '%s' attribute:  '%s'\n",tokenNameToString(fsa.currToken->tokenName),attributeToString(fsa.currToken->attribute->attrInt));
 				else 
-					printf("got token name: '%d' attribute:  '%s'\n",fsa.currToken->tokenName,fsa.currToken->attribute->attrString);
+					printf("got token name: '%s' attribute:  '%s'\n",tokenNameToString(fsa.currToken->tokenName),fsa.currToken->attribute->attrString);
 				return 0;
 			default:
 				catchAllMachine(line);
@@ -926,4 +918,77 @@ void addToSymbolTable(char* id) {
 		currNode->next = newNode;
 	}
 }
-	
+
+char *tokenNameToString(int tokenName) {
+	switch(tokenName) 
+	{
+		case RESERVED:
+			return "Reserved";
+		case ID:
+			return "Id";
+		case NUM:
+			return "num";
+		case RELOP:
+			return "relop";
+		case ADDOP:
+			return "addop";
+		case MULOP:
+			return "mulop";
+		case ASSIGNOP:
+			return "assignop";
+		case LEXERR:
+			return "lexerr";
+		default:
+			return "unknown";
+	}
+}
+
+char *attributeToString(int attribute) {
+	switch(attribute) 
+	{
+		case INTTOOLONG:
+			return "Extra Long Int";
+		case UNRECOGNIZEDNUM:
+			return "Unrec number";
+		case DECIMALTOOLONG:
+			return "Extra Long Decimal";
+		case REALTOOLONG:
+			return "Extra Long Real";
+		case LEADINGZEROES:
+			return "Leading Zero";
+		case LEADINGZEROESEXP:
+			return "Leading Zero in Exp";
+		case TRAILINGZERO:
+			return "Trailing zero";
+		case LESSTHAN:
+			return "<";
+		case LESSTHANEQUAL:
+			return "<=";
+		case NOTEQUAL:
+			return "<>";
+		case GREATERTHAN:
+			return ">";
+		case GREATERTHANEQUAL:
+			return ">=";
+		case EQUAL:
+			return "=";
+		case ADD:
+			return "+";
+		case SUBTRACT:
+			return "-";
+		case OR:
+			return "or";
+		case MULTIPLY:
+			return "*";
+		case DIVIDE:
+			return "/";
+		case DIV:
+			return "DIV";
+		case MOD:
+			return "MOD";
+		case AND:
+			return "AND";
+		default:
+			return "unknown";
+	}
+}
