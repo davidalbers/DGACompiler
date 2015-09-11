@@ -10,6 +10,12 @@
 #define ADDOP 33
 #define MULOP 34
 #define ASSIGNOP 35
+#define OPENPAREN 36
+#define CLOSEPAREN 37
+#define COMMA 38
+#define SEMICOLON 39
+#define COLON 40
+#define PERIOD 41
 #define LEXERR 99
 #define INTTOOLONG 2
 #define UNRECOGNIZEDNUM 3
@@ -32,6 +38,8 @@
 #define DIV 20
 #define MOD 21
 #define AND 22
+#define UNRECOGNIZEDSYMBOL 23
+
 
 union Attribute {
 	char *attrString;
@@ -206,40 +214,49 @@ int getNextToken(char *line) {
 		{
 			case 0:
 				// puts("whitespaceMachine");
+				fsa.f = fsa.b; 
 				whitespaceMachine(line);
 				break;
 			case 2:
 				// puts("idMachine");
+				fsa.f = fsa.b; 
 				idMachine(line);
 				break;
 			case 4:
 				// puts("relopMachine");
+				fsa.f = fsa.b; 
 				relopMachine(line);
 				break;
 			case 7:
 				// puts("realMachine");
+				fsa.f = fsa.b; 
 				realMachine(line);
 				break;
 			case 15:
 				// puts("newLineMachine");
+				fsa.f = fsa.b; 
 				newLineMachine(line);
 				if(fsa.state == 0)
 					return 1;
 				break;
 			case 16:
 				// puts("addop machine");
+				fsa.f = fsa.b; 
 				addopMachine(line);
 				break;
 			case 17:
-				// puts("mulopMachine");
+				//puts("mulopMachine");
+				fsa.f = fsa.b; 
 				mulopMachine(line);
 				break;
 			case 18:
-				// puts("assignop machine");
+				//puts("assignop machine");
+				fsa.f = fsa.b; 
 				assignopMachine(line);
 				break;
 			case 20:
-				// puts("int machine");
+				fsa.f = fsa.b; 
+				//puts("int machine");
 				intMachine(line);
 				break;
 			case 101:
@@ -247,12 +264,15 @@ int getNextToken(char *line) {
 				//only read applicable type for token
 				//theres probably a better way than >= 32
 				fsa.b = fsa.f;
-				if(fsa.currToken->tokenName >= 32)
+				if(fsa.currToken->tokenName >= 36) 
+					printf("got token name: '%s'\n",tokenNameToString(fsa.currToken->tokenName));
+				else if(fsa.currToken->tokenName >= 32)
 					printf("got token name: '%s' attribute:  '%s'\n",tokenNameToString(fsa.currToken->tokenName),attributeToString(fsa.currToken->attribute->attrInt));
 				else 
 					printf("got token name: '%s' attribute:  '%s'\n",tokenNameToString(fsa.currToken->tokenName),fsa.currToken->attribute->attrString);
 				return 0;
 			default:
+				fsa.f = fsa.b; 
 				catchAllMachine(line);
 				break;
 		}
@@ -687,7 +707,6 @@ void newLineMachine(char* line) {
 
 void addopMachine(char* line) {
 	char c = line[fsa.f];
-	printf("addop got '%c'\n",c);
 	fsa.f++;
 	if(c == '+') {
 		struct token addopToken;
@@ -732,7 +751,7 @@ void assignopMachine(char* line) {
 		if(count == 2 && c != '=') {
 			//second char has to be '=' if not, exit
 			fsa.f--;
-			fsa.state = 19;
+			fsa.state = 20;
 			return;
 		}
 		else if(count == 2 && c == '=') {
@@ -835,11 +854,69 @@ void intMachine(char *line) {
 	}
 } 
 
+void parenMachine(char *line) {
+	char c = line[fsa.f];
+	fsa.f++;
+
+}
+
 void catchAllMachine(char* line) {
 	char c = line[fsa.f];
 	fsa.f++;
-	fsa.state = 0;
-	printf("catchall read %c%d\n", c, fsa.f);
+	//check for all single character tokens
+	if(c == '(') {
+		fsa.state = 101;
+		struct token parenToken;
+		parenToken.tokenName = OPENPAREN;
+		fsa.currToken = &parenToken;
+		return;
+	}
+	else if(c == ')') {
+		fsa.state = 101;
+		struct token parenToken;
+		parenToken.tokenName = CLOSEPAREN;
+		fsa.currToken = &parenToken;
+		return;
+	}
+	else if(c == ',') {
+		fsa.state = 101;
+		int test = 43;
+		struct token commaToken;
+		commaToken.tokenName = COMMA;
+		fsa.currToken = &commaToken;
+		return;
+	}
+	else if(c == ';') {
+		fsa.state = 101;
+		struct token semicolonToken;
+		semicolonToken.tokenName = SEMICOLON;
+		fsa.currToken = &semicolonToken;
+		return;
+	}
+	else if(c == ':') {
+		puts("found token");
+		fsa.state = 101;
+		struct token colonToken;
+		colonToken.tokenName = COLON;
+		fsa.currToken = &colonToken;
+		return;
+	}
+	else if (c == '.') {
+		fsa.state = 101;
+		struct token periodToken;
+		periodToken.tokenName = PERIOD;
+		fsa.currToken = &periodToken;
+		return;
+	}
+	//not a single character token? don't know what to do
+	//ignore this char and go back to initial state
+	fsa.state = 101;
+	struct token catchallToken;
+	union Attribute catchallAttr;
+	catchallToken.tokenName = LEXERR;
+	catchallAttr.attrInt = UNRECOGNIZEDSYMBOL;
+	catchallToken.attribute = &catchallAttr;
+	fsa.currToken = &catchallToken;
 }
 
 
@@ -938,6 +1015,18 @@ char *tokenNameToString(int tokenName) {
 			return "assignop";
 		case LEXERR:
 			return "lexerr";
+		case OPENPAREN:
+			return "open paren";
+		case CLOSEPAREN:
+			return "close paren";
+		case COLON:
+			return "colon";
+		case SEMICOLON:
+			return "semicolon";
+		case PERIOD:
+			return "period";
+		case COMMA:
+			return "comma";
 		default:
 			return "unknown";
 	}
@@ -977,7 +1066,7 @@ char *attributeToString(int attribute) {
 		case SUBTRACT:
 			return "-";
 		case OR:
-			return "or";
+			return "OR";
 		case MULTIPLY:
 			return "*";
 		case DIVIDE:
@@ -988,6 +1077,8 @@ char *attributeToString(int attribute) {
 			return "MOD";
 		case AND:
 			return "AND";
+		case UNRECOGNIZEDSYMBOL:
+			return "Unrecog Symbol";
 		default:
 			return "unknown";
 	}
