@@ -39,6 +39,17 @@
 #define MOD 21
 #define AND 22
 #define UNRECOGNIZEDSYMBOL 23
+#define PROGRAM 24
+#define VAR 25
+#define INTEGER 26
+#define FUNCTION 27
+#define BEGIN 28
+#define END 29
+#define THEN 30
+#define IF 31
+#define ELSE 32
+#define IDTOOLONG 33
+
 
 
 union Attribute {
@@ -61,14 +72,27 @@ struct FSA {
 struct node {
 	char *id;
 	struct node *next;
-} *resWordsRoot, *symbolTableRoot;
+} *symbolTableRoot;
 
+struct resWordNode{
+	char *id;
+	int tokenName;
+	int attr;
+	struct resWordNode *next;
+	int empty;
+} *resWordsRoot;
 
+struct tokenNode {
+	struct token *thisToken;
+	struct tokenNode *next;
+} *tokenNodeRoot;
 
 extern int errno;
 
+FILE *listingFile;
+FILE *tokenFile;
 
-void sourceToListing(char *, char *);
+void sourceToListing(char *);
 char** readFileLineByLine(FILE *, int);
 int fileLineCount(FILE *);
 int fileLength(FILE *);
@@ -82,39 +106,43 @@ void catchAllMachine(char *);
 void newLineMachine(char *);
 void addToSymbolTable(char *);
 void loadReservedWords(char *);
-void addToReservedWords(char *);
+void addToReservedWords(char *, int, int);
 int checkInResWordTable(char *);
+struct resWordNode *findInResWordTable(char *);
 void addopMachine(char *);
 void mulopMachine(char *);
 void assignopMachine(char *);
 void intMachine(char *);
 char *tokenNameToString(int);
 char *attributeToString(int);
+void printToken();
+void addToken();
 
 int main(int argc, char *argv[]) 
 {
 	
-	if(argc == 3) 
+	if(argc == 2) 
 	{
 		loadReservedWords("reservedWords.txt");
-		sourceToListing(argv[1],argv[2]);
+		sourceToListing(argv[1]);
 	}
 	else
 	{
-		puts("Invalid number of arguments. Valid syntax is 'proj0 /path/to/source /path/to/listing'");
+		puts("Invalid number of arguments. Valid syntax is 'proj1 /path/to/source'");
 		return -1;
 	}
 	puts("Program finished");
 	return 0;
 }
 
-void sourceToListing(char *sourcePath, char *listingPath) 
+void sourceToListing(char *sourcePath) 
 {
 	FILE *src = fopen(sourcePath, "r"); 
 	if(src != NULL)
 	{
-		FILE *listing = fopen(listingPath, "w");
-		if(listing != NULL) 
+		listingFile = fopen("listing.txt", "w");
+		tokenFile = fopen("token.txt", "w");
+		if(listingFile != NULL && tokenFile != NULL) 
 		{
 			int numberLines = fileLineCount(src);
 			char **lines = readFileLineByLine(src, numberLines);
@@ -124,6 +152,7 @@ void sourceToListing(char *sourcePath, char *listingPath)
 			while(i < numberLines) 
 			{
 				printf("%d:\t%s",(i+1), lines[i]);
+				fprintf(listingFile, "%d:\t%s",(i+1), lines[i] );
 				while(getNextToken(lines[i]) == 0) {
 
 				}
@@ -188,16 +217,10 @@ void loadReservedWords(char *pathToReservedWords) {
 		char c = 0;
 		int index = 0;
 		char *resWord = malloc(sizeof(char) * 32);
-		while(fscanf(reservedWords,"%c",&c) != EOF ) {
-			if( (c == ',' || c == '\n') && index > 0) {
-				addToReservedWords(resWord);
-				resWord = malloc(sizeof(char) * 32);
-				index = 0;
-			}
-			else if (c != ' '){
-				resWord[index] = c;
-				index++;
-			}
+		int tokenType = -1;
+		int attr = -1;
+		while(fscanf(reservedWords,"%s %d %d", resWord, &tokenType, &attr) != EOF) {
+			addToReservedWords(resWord, tokenType, attr);
 		}
 	}
 	else {
@@ -223,7 +246,7 @@ int getNextToken(char *line) {
 				idMachine(line);
 				break;
 			case 4:
-				// puts("relopMachine");
+				//puts("relopMachine");
 				fsa.f = fsa.b; 
 				relopMachine(line);
 				break;
@@ -263,13 +286,10 @@ int getNextToken(char *line) {
 				//seg fault if try to read attrString and there wasn't one
 				//only read applicable type for token
 				//theres probably a better way than >= 32
+
 				fsa.b = fsa.f;
-				if(fsa.currToken->tokenName >= 36) 
-					printf("got token name: '%s'\n",tokenNameToString(fsa.currToken->tokenName));
-				else if(fsa.currToken->tokenName >= 32)
-					printf("got token name: '%s' attribute:  '%s'\n",tokenNameToString(fsa.currToken->tokenName),attributeToString(fsa.currToken->attribute->attrInt));
-				else 
-					printf("got token name: '%s' attribute:  '%s'\n",tokenNameToString(fsa.currToken->tokenName),fsa.currToken->attribute->attrString);
+				printToken();
+
 				return 0;
 			default:
 				fsa.f = fsa.b; 
@@ -301,7 +321,8 @@ void whitespaceMachine(char *line) {
 void idMachine(char *line) {
 	char *id = malloc(sizeof(char) * 10);
 	int idLength = 0;
-	while(fsa.f < MAX_LINE_LENGTH && idLength < 10) {
+	int idTooLong = 0;
+	while(fsa.f < MAX_LINE_LENGTH) {
 		char c = line[fsa.f];
 		// printf("idMachine got '%c'\n",c);
 		fsa.f++;
@@ -321,30 +342,43 @@ void idMachine(char *line) {
 				break;
 			case 3:
 				if(isalpha(c) || isdigit(c)) {
-					id[idLength] = c;
 					idLength++;
+					if(idLength > 10)
+						idTooLong = 1;
+					else 
+						id[idLength - 1] = c;
 				}
 				else {
 					fsa.f--;
 					fsa.state = 101;
-					printf("got an id %s\n", id);
-					if(checkInResWordTable(id)) {
-						printf("id is a reserved word '%s'\n", id);
+					if(idTooLong) {
 						struct token idToken;
 						union Attribute attr;
-						attr.attrString = id;
-						idToken.tokenName = RESERVED;
+						idToken.tokenName = LEXERR;
+						attr.attrInt = IDTOOLONG;
+						idToken.attribute = &attr;
+						fsa.currToken = &idToken;
+						return;
+					}
+					struct resWordNode *resWord = findInResWordTable(id);
+					if(resWord->empty != 1) {
+						// printf("id is a reserved word '%s,%d,%d'\n", id, resWord->tokenName, resWord->attr);
+						struct token idToken;
+						union Attribute attr;
+						attr.attrInt = resWord->attr;
+						idToken.tokenName = resWord->tokenName;
 						idToken.attribute = &attr;
 						fsa.currToken = &idToken;
 						return;
 					}
 					addToSymbolTable(id);
-					struct token idToken;
-					union Attribute attr;
-					attr.attrString = id;
-					idToken.tokenName = ID;
-					idToken.attribute = &attr;
-					fsa.currToken = &idToken;
+					struct token *idToken = malloc(sizeof(struct token));
+					union Attribute *attr = malloc(sizeof(union Attribute));
+			
+					attr->attrString = id;
+					idToken->tokenName = ID;
+					idToken->attribute = attr;
+					fsa.currToken = idToken;
 					return;
 				}
 				break;
@@ -353,11 +387,12 @@ void idMachine(char *line) {
 }
 
 void relopMachine(char* line) {
-	struct token relopToken;
-	union Attribute attr;
+	
 	while(fsa.f < MAX_LINE_LENGTH) {
+		struct token *relopToken = malloc(sizeof(struct token));
+		union Attribute *attr = malloc(sizeof(union Attribute));
 		char relop = line[fsa.f];
-		// printf("relopMachine got '%c'\n",relop);
+		 // printf("relopMachine got '%c'\n",relop);
 		fsa.f++;
 		switch(fsa.state) 
 		{
@@ -367,10 +402,10 @@ void relopMachine(char* line) {
 				else if(relop == '>') 
 					fsa.state = 6;
 				else if(relop == '=') {
-					relopToken.tokenName = RELOP;
-					attr.attrInt = EQUAL;
-					relopToken.attribute = &attr;
-					fsa.currToken = &relopToken;
+					relopToken->tokenName = RELOP;
+					attr->attrInt = EQUAL;
+					relopToken->attribute = attr;
+					fsa.currToken = relopToken;
 					fsa.state = 101;
 					return;
 				}
@@ -382,31 +417,31 @@ void relopMachine(char* line) {
 				break;
 			case 5:
 				//any character here results in a relop
-				relopToken.tokenName = RELOP;
+				relopToken->tokenName = RELOP;
 				if(relop == '=') {
-					attr.attrInt = LESSTHANEQUAL;
+					attr->attrInt = LESSTHANEQUAL;
 				}
 				else if(relop == '>') {
-					attr.attrInt = NOTEQUAL;
+					attr->attrInt = NOTEQUAL;
 				}
 				else {
 					fsa.f--; //'<' + another, non relop, character, so just <
-					attr.attrInt = LESSTHAN;
+					attr->attrInt = LESSTHAN;
 				}
-				relopToken.attribute = &attr;
-				fsa.currToken = &relopToken;
+				relopToken->attribute = attr;
+				fsa.currToken = relopToken;
 				fsa.state = 101;
 				return;
 			case 6:
-				relopToken.tokenName = RELOP;
+				relopToken->tokenName = RELOP;
 				if(relop == '=') 
-					attr.attrInt = GREATERTHANEQUAL;
+					attr->attrInt = GREATERTHANEQUAL;
 				if(relop != '=') {
-					attr.attrInt = GREATERTHAN;
+					attr->attrInt = GREATERTHAN;
 					fsa.f--;//'>'+ another, non relop, character, so just >
 				}
-				relopToken.attribute = &attr;
-				fsa.currToken = &relopToken;
+				relopToken->attribute = attr;
+				fsa.currToken = relopToken;
 				fsa.state = 101;
 				return;	
 		}	
@@ -815,7 +850,6 @@ void intMachine(char *line) {
 			else {
 				fsa.state = 22;
 				fsa.f--;
-				puts("int machine fail");
 				return;
 			}
 		}
@@ -894,7 +928,6 @@ void catchAllMachine(char* line) {
 		return;
 	}
 	else if(c == ':') {
-		puts("found token");
 		fsa.state = 101;
 		struct token colonToken;
 		colonToken.tokenName = COLON;
@@ -921,69 +954,95 @@ void catchAllMachine(char* line) {
 
 
 
-void addToReservedWords(char *id) {
+void addToReservedWords(char *id, int tokenName, int attr) {
 	if(resWordsRoot == NULL) {
-		resWordsRoot = (struct node *) malloc(sizeof(struct node));
-		printf("id '%s' added to root of symbol table\n",id);
+		resWordsRoot = (struct resWordNode *) malloc(sizeof(struct resWordNode));
+		// printf("id '%s' added to root of symbol table; %d,%d\n",id,tokenName,attr);
 		resWordsRoot->next = 0;
-		resWordsRoot->id = id;
+		char *idCopy = malloc(sizeof(char) * 32);
+		strcpy(idCopy, id);
+		resWordsRoot->id = idCopy;
+		resWordsRoot->tokenName = tokenName;
+		resWordsRoot->attr = attr;
 	}
 	else {
-		struct node *currNode = resWordsRoot;
+		struct resWordNode *currNode = resWordsRoot;
 		if(!strcmp(id,resWordsRoot->id)) {
-			printf("id '%s' already exists in root of symbol table as '%s'\n",id,resWordsRoot->id);
+			// printf("id '%s' already exists in root of symbol table as '%s'\n",id,resWordsRoot->id);
 			return;
 		}
 		while(currNode->next != 0) {
 			currNode = currNode->next;
 			if(!strcmp(id,currNode->id)) {
-				printf("id '%s' already exists in symbol table\n",id);
+				// printf("id '%s' already exists in symbol table\n",id);
 				return; //found id in table, don't add
 			}
 		}
 		//not found, add a new node to list
-		struct node *newNode = (struct node *) malloc(sizeof(struct node));
-		newNode->id = id;
+		struct resWordNode *newNode = (struct resWordNode *) malloc(sizeof(struct resWordNode));
+		char *idCopy = malloc(sizeof(char) * 32);
+		strcpy(idCopy, id);
+		newNode->id = idCopy;
+		newNode->tokenName = tokenName;
+		newNode->attr = attr;
 		newNode->next = 0;
-		printf("adding %s to symbol table\n",id);
+		// printf("adding %s to symbol table; %d,%d\n",id,tokenName,attr);
 		currNode->next = newNode;
 	}
 }
 
 int checkInResWordTable(char *id) {
-	struct node *currNode = resWordsRoot;
+	struct resWordNode *currNode = resWordsRoot;
 	if(!strcmp(id,resWordsRoot->id)) {
-		printf("id '%s' already exists in reserved word table as '%s'\n",id,resWordsRoot->id);
+		// printf("id '%s' already exists in reserved word table as '%s'\n",id,resWordsRoot->id);
 		return 1;
 	}
 	while(currNode->next != 0) {
 		currNode = currNode->next;
 		if(!strcmp(id,currNode->id)) {
-			printf("id '%s' already exists in reserved word table\n",id);
+			// printf("id '%s' already exists in reserved word table\n",id);
 			return 1; //found id in table, don't add
 		}
 	}
 	return 0; //not found
 }
 
+struct resWordNode *findInResWordTable(char *id) {
+	struct resWordNode *currNode = resWordsRoot;
+	if(!strcmp(id,resWordsRoot->id)) {
+		return resWordsRoot;
+	}
+	while(currNode->next != 0) {
+		currNode = currNode->next;
+		if(!strcmp(id,currNode->id)) {
+
+			return currNode; //found id in table, don't add
+		}
+	}
+	//nothing found
+	struct resWordNode *emptyNode = (struct resWordNode *) malloc(sizeof(struct resWordNode));
+	emptyNode->empty = 1;
+	return emptyNode; //not found
+}
+
 void addToSymbolTable(char* id) {
 
 	if(symbolTableRoot == NULL) {
 		symbolTableRoot = (struct node *) malloc(sizeof(struct node));
-		printf("id '%s' added to symbolTableRoot of symbol table\n",id);
+		// printf("id '%s' added to symbolTableRoot of symbol table\n",id);
 		symbolTableRoot->next = 0;
 		symbolTableRoot->id = id;
 	}
 	else {
 		struct node *currNode = symbolTableRoot;
 		if(!strcmp(id,symbolTableRoot->id)) {
-			printf("id '%s' already exists in symbolTableRoot of symbol table as '%s'\n",id,symbolTableRoot->id);
+			// printf("id '%s' already exists in symbolTableRoot of symbol table as '%s'\n",id,symbolTableRoot->id);
 			return;
 		}
 		while(currNode->next != 0) {
 			currNode = currNode->next;
 			if(!strcmp(id,currNode->id)) {
-				printf("id '%s' already exists in symbol table\n",id);
+				// printf("id '%s' already exists in symbol table\n",id);
 				return; //found id in table, don't add
 			}
 		}
@@ -991,7 +1050,7 @@ void addToSymbolTable(char* id) {
 		struct node *newNode = (struct node *) malloc(sizeof(struct node));
 		newNode->id = id;
 		newNode->next = 0;
-		printf("adding %s to symbol table\n",id);
+		// printf("adding %s to symbol table\n",id);
 		currNode->next = newNode;
 	}
 }
@@ -1077,9 +1136,79 @@ char *attributeToString(int attribute) {
 			return "MOD";
 		case AND:
 			return "AND";
+		case PROGRAM:
+			return "program";
+		case VAR:
+			return "var";
+		case INTEGER:
+			return "integer";
+		case FUNCTION:
+			return "function";
+		case BEGIN:
+			return "begin";
+		case END:
+			return "end";
+		case THEN:
+			return "then";
+		case IF:
+			return "if";
+		case ELSE: 
+			return "else";
 		case UNRECOGNIZEDSYMBOL:
 			return "Unrecog Symbol";
+		case IDTOOLONG:
+			return "Extra long id";
 		default:
 			return "unknown";
+	}
+
+}
+
+void printToken() {
+	//todo error with prints in switch
+	//todo print string read when got lexerr token for listing file use strncpy
+	if(fsa.currToken->tokenName == LEXERR) {
+		char *lexeme = strcpy()
+		fprintf(listingFile, "LEXERR:\t%s:\t%s\n", attributeToString(fsa.currToken->attribute->attrInt), );		
+	}
+	switch(fsa.currToken->tokenName) {
+		case RESERVED: //int attrs
+		case RELOP:
+		case ADDOP:
+		case MULOP:
+		case LEXERR:
+			printf("token: %s attr: %s\n", tokenNameToString(fsa.currToken->tokenName), attributeToString(fsa.currToken->attribute->attrInt));
+			break;
+		case OPENPAREN: //no attrs
+		case CLOSEPAREN:
+		case COLON:
+		case SEMICOLON:
+		case PERIOD:
+		case COMMA:
+		case ASSIGNOP:
+			printf("token: %s\n", tokenNameToString(fsa.currToken->tokenName));
+			break;
+		case ID:
+		case NUM:
+			printf("token: %s attr: %s\n", tokenNameToString(fsa.currToken->tokenName), fsa.currToken->attribute->attrString);
+			break;
+		default:
+			puts("Token not recognized");
+	}
+}
+
+void addToken() {
+	if(tokenNodeRoot == NULL) {
+		tokenNodeRoot = (struct tokenNode *)(malloc(sizeof(struct tokenNode)));
+		tokenNodeRoot->thisToken = fsa.currToken;
+	}
+	else {
+		struct tokenNode *currNode = tokenNodeRoot;
+		while(currNode->next != 0) {
+			currNode = currNode->next;
+		}
+		struct tokenNode *newNode = (struct tokenNode *)(malloc(sizeof(struct tokenNode )));
+		newNode->thisToken = fsa.currToken;
+		currNode->next = newNode;
 	}
 }

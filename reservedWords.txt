@@ -1,13 +1,13 @@
-program
-var 
-integer
-function 
-begin 
-end 
-then 
-if
-else
-mod
-or
-div
-and
+program 0 24
+var 0 25
+integer 0 26
+function 0 27
+begin 0 28
+end 0 29
+then 0 30
+if 0 31
+else 0 32
+mod 34 21
+or 33 17
+div 34 20
+and 34 22

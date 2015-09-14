@@ -1,4 +1,14 @@
-0 01 00001 10 010 0.1
-1.0 1.00 1.40 01.00 1.00E3 1.0E03 
-3.1415a53
-; : , ( ) () .
+this is a testlksfskldfjdshfk
+program example(input, output);
+var x, y: integer;
+function gcd(a,b: integer): integer;
+begin 
+	if b <> then gcd := a
+	else gcd := gcd(b, a mod b) 
+end;
+
+begin
+	read(x, y);
+	write(gcd(x,y))
+end.
+

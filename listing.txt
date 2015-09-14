@@ -1,0 +1,15 @@
+1:	this is a testlksfskldfjdshfk
+LEXERR:	Extra long id:	
+2:	program example(input, output);
+3:	var x, y: integer;
+4:	function gcd(a,b: integer): integer;
+5:	begin 
+6:		if b <> then gcd := a
+7:		else gcd := gcd(b, a mod b) 
+8:	end;
+9:	
+10:	begin
+11:		read(x, y);
+12:		write(gcd(x,y))
+13:	end.
+14:	
