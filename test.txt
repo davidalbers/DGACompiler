@@ -1,14 +1,9 @@
-this is a testlksfskldfjdshfk
-program example(input, output);
-var x, y: integer;
-function gcd(a,b: integer): integer;
-begin 
-	if b <> then gcd := a
-	else gcd := gcd(b, a mod b) 
-end;
-
-begin
-	read(x, y);
-	write(gcd(x,y))
-end.
+program var integer function begin end then if else mod or div and
+a a1 
+1 1.0 1.2E3 1.2E-3
+< <= <> > >= =
++ -
+* /
+:=
+() , ; : .
 

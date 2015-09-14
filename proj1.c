@@ -91,6 +91,7 @@ extern int errno;
 
 FILE *listingFile;
 FILE *tokenFile;
+int tokenizingLine = 0;
 
 void sourceToListing(char *);
 char** readFileLineByLine(FILE *, int);
@@ -115,7 +116,7 @@ void assignopMachine(char *);
 void intMachine(char *);
 char *tokenNameToString(int);
 char *attributeToString(int);
-void printToken();
+void printToken(char *);
 void addToken();
 
 int main(int argc, char *argv[]) 
@@ -146,17 +147,15 @@ void sourceToListing(char *sourcePath)
 		{
 			int numberLines = fileLineCount(src);
 			char **lines = readFileLineByLine(src, numberLines);
-				
-			int i = 0;
-			
-			while(i < numberLines) 
+			fprintf(tokenFile,"LINE\t%-12s\t%-25s\tLEXEME\n", "TOKEN-TYPE", "ATTRIBUTE");
+			while(tokenizingLine < numberLines) 
 			{
-				printf("%d:\t%s",(i+1), lines[i]);
-				fprintf(listingFile, "%d:\t%s",(i+1), lines[i] );
-				while(getNextToken(lines[i]) == 0) {
+				printf("%d:\t%s",(tokenizingLine+1), lines[tokenizingLine]);
+				fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), lines[tokenizingLine] );
+				while(getNextToken(lines[tokenizingLine]) == 0) {
 
 				}
-				i++;
+				tokenizingLine++;
 			}
 		}
 		else 
@@ -232,6 +231,7 @@ void loadReservedWords(char *pathToReservedWords) {
 //Return 0 if token or error
 int getNextToken(char *line) {
 	fsa.state = 0;
+	
 	while(fsa.f < MAX_LINE_LENGTH) {
 		switch(fsa.state) 
 		{
@@ -283,13 +283,15 @@ int getNextToken(char *line) {
 				intMachine(line);
 				break;
 			case 101:
-				//seg fault if try to read attrString and there wasn't one
-				//only read applicable type for token
-				//theres probably a better way than >= 32
-
+				goto Cleanup;
+				Cleanup: ; //this is an empty statement so I can declare a variable
+				
+				char *lexeme = malloc(sizeof(char) * (fsa.f - fsa.b));
+			
+				strncpy(lexeme, line+fsa.b, (fsa.f-fsa.b));
+				
 				fsa.b = fsa.f;
-				printToken();
-
+				printToken(lexeme);
 				return 0;
 			default:
 				fsa.f = fsa.b; 
@@ -352,23 +354,23 @@ void idMachine(char *line) {
 					fsa.f--;
 					fsa.state = 101;
 					if(idTooLong) {
-						struct token idToken;
-						union Attribute attr;
-						idToken.tokenName = LEXERR;
-						attr.attrInt = IDTOOLONG;
-						idToken.attribute = &attr;
-						fsa.currToken = &idToken;
+						struct token *idToken = (struct token *) malloc(sizeof(struct token ));
+						union Attribute *attr = (union Attribute *) malloc(sizeof(union Attribute));
+						idToken->tokenName = LEXERR;
+						attr->attrInt = IDTOOLONG;
+						idToken->attribute = attr;
+						fsa.currToken = idToken;
 						return;
 					}
 					struct resWordNode *resWord = findInResWordTable(id);
 					if(resWord->empty != 1) {
 						// printf("id is a reserved word '%s,%d,%d'\n", id, resWord->tokenName, resWord->attr);
-						struct token idToken;
-						union Attribute attr;
-						attr.attrInt = resWord->attr;
-						idToken.tokenName = resWord->tokenName;
-						idToken.attribute = &attr;
-						fsa.currToken = &idToken;
+						struct token *idToken = (struct token *) malloc(sizeof(struct token ));
+						union Attribute *attr = (union Attribute *) malloc(sizeof(union Attribute));
+						attr->attrInt = resWord->attr;
+						idToken->tokenName = resWord->tokenName;
+						idToken->attribute = attr;
+						fsa.currToken = idToken;
 						return;
 					}
 					addToSymbolTable(id);
@@ -521,12 +523,12 @@ void realMachine(char *line) {
 				}
 				else {
 					fsa.f--;
-					struct token errToken;
-					errToken.tokenName = LEXERR;
-					union Attribute attr;
-					attr.attrInt = UNRECOGNIZEDNUM;
-					errToken.attribute = &attr;
-					fsa.currToken = &errToken;
+					struct token *errToken = (struct token *)malloc(sizeof(struct token));
+					errToken->tokenName = LEXERR;
+					union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+					attr->attrInt = UNRECOGNIZEDNUM;
+					errToken->attribute = attr;
+					fsa.currToken = errToken;
 					fsa.state = 101;
 					return;
 				}
@@ -549,36 +551,36 @@ void realMachine(char *line) {
 					fsa.state = 11;
 				}
 				else {
-					struct token numToken;
-					union Attribute attr;
+					struct token *numToken = (struct token *)malloc(sizeof(struct token));
+					union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
 					if(intLengthError) {
 						
-						numToken.tokenName = LEXERR;
-						attr.attrInt = INTTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = INTTOOLONG;
 	
 					}
 					else if(decimalLengthError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = DECIMALTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = DECIMALTOOLONG;
 					}
 					else if (leadingZeroError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = LEADINGZEROES;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = LEADINGZEROES;
 					}
 					else if(yyTrailingZero) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = TRAILINGZERO;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = TRAILINGZERO;
 					}
 					else {
-						numToken.tokenName = NUM;
+						numToken->tokenName = NUM;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
-						attr.attrString = num;
+						attr->attrString = num;
 				
 					}
-					numToken.attribute = &attr;
-					fsa.currToken = &numToken;
+					numToken->attribute = attr;
+					fsa.currToken = numToken;
 					fsa.state = 101;
 					fsa.f--;
 					return;
@@ -599,12 +601,12 @@ void realMachine(char *line) {
 
 				}
 				else {
-					struct token errToken;
-					errToken.tokenName = LEXERR;
-					union Attribute attr;
-					attr.attrInt = UNRECOGNIZEDNUM;
-					errToken.attribute = &attr;
-					fsa.currToken = &errToken;
+					struct token *errToken = (struct token *)malloc(sizeof(struct token));
+					errToken->tokenName = LEXERR;
+					union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+					attr->attrInt = UNRECOGNIZEDNUM;
+					errToken->attribute = attr;
+					fsa.currToken = errToken;
 					fsa.state = 101;
 					fsa.f--;
 					return;
@@ -620,35 +622,35 @@ void realMachine(char *line) {
 					zzCount++;
 				}
 				else {
-					struct token numToken;
-					union Attribute attr;
+					struct token *numToken = (struct token *)malloc(sizeof(struct token));
+					union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
 					if(intLengthError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = INTTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = INTTOOLONG;
 					}
 					else if(decimalLengthError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = DECIMALTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = DECIMALTOOLONG;
 					}
 					else if (leadingZeroError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = LEADINGZEROES;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = LEADINGZEROES;
 					}
 					else if(yyTrailingZero) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = TRAILINGZERO;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = TRAILINGZERO;
 					}
 					else {
-						numToken.tokenName = NUM;
+						numToken->tokenName = NUM;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
 						strcat(num,"E");
 						strcat(num,zz);
-						attr.attrString = num;
+						attr->attrString = num;
 					}
-					numToken.attribute = &attr;
-					fsa.currToken = &numToken;
+					numToken->attribute = attr;
+					fsa.currToken = numToken;
 					fsa.state = 101;
 					fsa.f--;
 					return;
@@ -659,43 +661,43 @@ void realMachine(char *line) {
 					realLengthError = 1;
 				}
 				else {
-					struct token numToken;
-					union Attribute attr;
+					struct token *numToken = (struct token *)malloc(sizeof(struct token));
+					union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
 					if(intLengthError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = INTTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = INTTOOLONG;
 					}
 					else if(decimalLengthError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = DECIMALTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = DECIMALTOOLONG;
 					}
 					else if (leadingZeroError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = LEADINGZEROES;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = LEADINGZEROES;
 					}
 					else if(realLengthError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = REALTOOLONG;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = REALTOOLONG;
 					}
 					else if(zzLeadingZeroError) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = LEADINGZEROESEXP;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = LEADINGZEROESEXP;
 					}
 					else if(yyTrailingZero) {
-						numToken.tokenName = LEXERR;
-						attr.attrInt = TRAILINGZERO;
+						numToken->tokenName = LEXERR;
+						attr->attrInt = TRAILINGZERO;
 					}
 					else {
-						numToken.tokenName = NUM;
+						numToken->tokenName = NUM;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
 						strcat(num,"E");
 						strcat(num,zz);
-						attr.attrString = num;
+						attr->attrString = num;
 					}
-					numToken.attribute = &attr;
-					fsa.currToken = &numToken;
+					numToken->attribute = attr;
+					fsa.currToken = numToken;
 					fsa.state = 101;
 					fsa.f--;
 					return;
@@ -710,12 +712,12 @@ void realMachine(char *line) {
 					fsa.state = 12;
 				}
 				else {
-					struct token errToken;
-					errToken.tokenName = LEXERR;
-					union Attribute attr;
-					attr.attrInt = UNRECOGNIZEDNUM;
-					errToken.attribute = &attr;
-					fsa.currToken = &errToken;
+					struct token *errToken = (struct token *)malloc(sizeof(struct token));
+					errToken->tokenName = LEXERR;
+					union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+					attr->attrInt = UNRECOGNIZEDNUM;
+					errToken->attribute = attr;
+					fsa.currToken = errToken;
 					fsa.state = 101;
 					fsa.f--;
 					return;
@@ -744,22 +746,22 @@ void addopMachine(char* line) {
 	char c = line[fsa.f];
 	fsa.f++;
 	if(c == '+') {
-		struct token addopToken;
-		addopToken.tokenName = ADDOP;
-		union Attribute attr;
-		attr.attrInt = ADD;
-		addopToken.attribute = &attr;
-		fsa.currToken = &addopToken;
+		struct token *addopToken = (struct token *)malloc(sizeof(struct token));
+		addopToken->tokenName = ADDOP;
+		union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+		attr->attrInt = ADD;
+		addopToken->attribute = attr;
+		fsa.currToken = addopToken;
 		fsa.state = 101;
 		return;
 	}
 	else if(c == '-') {
-		struct token addopToken;
-		addopToken.tokenName = ADDOP;
-		union Attribute attr;
-		attr.attrInt = SUBTRACT;
-		addopToken.attribute = &attr;
-		fsa.currToken = &addopToken;
+		struct token *addopToken = (struct token *)malloc(sizeof(struct token));
+		addopToken->tokenName = ADDOP;
+		union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+		attr->attrInt = SUBTRACT;
+		addopToken->attribute = attr;
+		fsa.currToken = addopToken;
 		fsa.state = 101;
 		return;
 	}
@@ -792,9 +794,9 @@ void assignopMachine(char* line) {
 		else if(count == 2 && c == '=') {
 			//if second char is '=', return token
 			fsa.state = 101;
-			struct token assignopToken;
-			assignopToken.tokenName = ASSIGNOP;
-			fsa.currToken = &assignopToken;
+			struct token *assignopToken = (struct token *) malloc(sizeof(struct token));
+			assignopToken->tokenName = ASSIGNOP;
+			fsa.currToken = assignopToken;
 			return;
 		}
 	}
@@ -805,22 +807,22 @@ void mulopMachine(char *line) {
 	// printf("mulop got '%c'\n",c);
 	fsa.f++;
 	if(c == '*') {
-		struct token mulopToken;
-		mulopToken.tokenName = MULOP;
-		union Attribute attr;
-		attr.attrInt = MULTIPLY;
-		mulopToken.attribute = &attr;
-		fsa.currToken = &mulopToken;
+		struct token *mulopToken = (struct token *)malloc(sizeof(struct token));
+		mulopToken->tokenName = MULOP;
+		union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+		attr->attrInt = MULTIPLY;
+		mulopToken->attribute = attr;
+		fsa.currToken = mulopToken;
 		fsa.state = 101;
 		return;
 	}
 	else if(c == '/') {
-		struct token mulopToken;
-		mulopToken.tokenName = MULOP;
-		union Attribute attr;
-		attr.attrInt = DIVIDE;
-		mulopToken.attribute = &attr;
-		fsa.currToken = &mulopToken;
+		struct token *mulopToken = (struct token *)malloc(sizeof(struct token));
+		mulopToken->tokenName = MULOP;
+		union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
+		attr->attrInt = DIVIDE;
+		mulopToken->attribute = attr;
+		fsa.currToken = mulopToken;
 		fsa.state = 101;
 		return;
 	}
@@ -866,22 +868,22 @@ void intMachine(char *line) {
 			else {
 				fsa.state = 101;
 				fsa.f--;
-				struct token intToken;
-				union Attribute attr;
+				struct token *intToken = (struct token *)malloc(sizeof(struct token));
+				union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
 				if(length > maxLength) {
-					intToken.tokenName = LEXERR;
-					attr.attrInt = INTTOOLONG;
+					intToken->tokenName = LEXERR;
+					attr->attrInt = INTTOOLONG;
 				}
 				else if(leadingZeroError) {
-					intToken.tokenName = LEXERR;
-					attr.attrInt = LEADINGZEROES;
+					intToken->tokenName = LEXERR;
+					attr->attrInt = LEADINGZEROES;
 				}
 				else {
-					intToken.tokenName = NUM;
-					attr.attrString = num;
+					intToken->tokenName = NUM;
+					attr->attrString = num;
 				}
-				intToken.attribute = &attr;
-				fsa.currToken = &intToken;
+				intToken->attribute = attr;
+				fsa.currToken = intToken;
 				return;
 			}
 		}
@@ -900,56 +902,55 @@ void catchAllMachine(char* line) {
 	//check for all single character tokens
 	if(c == '(') {
 		fsa.state = 101;
-		struct token parenToken;
-		parenToken.tokenName = OPENPAREN;
-		fsa.currToken = &parenToken;
+		struct token *parenToken = (struct token *) malloc(sizeof(struct token));
+		parenToken->tokenName = OPENPAREN;
+		fsa.currToken = parenToken;
 		return;
 	}
 	else if(c == ')') {
 		fsa.state = 101;
-		struct token parenToken;
-		parenToken.tokenName = CLOSEPAREN;
-		fsa.currToken = &parenToken;
+		struct token *parenToken = (struct token *) malloc(sizeof(struct token));
+		parenToken->tokenName = CLOSEPAREN;
+		fsa.currToken = parenToken;
 		return;
 	}
 	else if(c == ',') {
 		fsa.state = 101;
-		int test = 43;
-		struct token commaToken;
-		commaToken.tokenName = COMMA;
-		fsa.currToken = &commaToken;
+		struct token *commaToken = (struct token *) malloc(sizeof(struct token));
+		commaToken->tokenName = COMMA;
+		fsa.currToken = commaToken;
 		return;
 	}
 	else if(c == ';') {
 		fsa.state = 101;
-		struct token semicolonToken;
-		semicolonToken.tokenName = SEMICOLON;
-		fsa.currToken = &semicolonToken;
+		struct token *semicolonToken = (struct token *) malloc(sizeof(struct token));
+		semicolonToken->tokenName = SEMICOLON;
+		fsa.currToken = semicolonToken;
 		return;
 	}
 	else if(c == ':') {
 		fsa.state = 101;
-		struct token colonToken;
-		colonToken.tokenName = COLON;
-		fsa.currToken = &colonToken;
+		struct token *colonToken =  (struct token *) malloc(sizeof(struct token));
+		colonToken->tokenName = COLON;
+		fsa.currToken = colonToken;
 		return;
 	}
 	else if (c == '.') {
 		fsa.state = 101;
-		struct token periodToken;
-		periodToken.tokenName = PERIOD;
-		fsa.currToken = &periodToken;
+		struct token *periodToken =(struct token *) malloc(sizeof(struct token));
+		periodToken->tokenName = PERIOD;
+		fsa.currToken = periodToken;
 		return;
 	}
 	//not a single character token? don't know what to do
 	//ignore this char and go back to initial state
 	fsa.state = 101;
-	struct token catchallToken;
-	union Attribute catchallAttr;
-	catchallToken.tokenName = LEXERR;
-	catchallAttr.attrInt = UNRECOGNIZEDSYMBOL;
-	catchallToken.attribute = &catchallAttr;
-	fsa.currToken = &catchallToken;
+	struct token *catchallToken = (struct token *)malloc(sizeof(struct token));
+	union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+	catchallToken->tokenName = LEXERR;
+	catchallAttr->attrInt = UNRECOGNIZEDSYMBOL;
+	catchallToken->attribute = catchallAttr;
+	fsa.currToken = catchallToken;
 }
 
 
@@ -1099,9 +1100,9 @@ char *attributeToString(int attribute) {
 		case UNRECOGNIZEDNUM:
 			return "Unrec number";
 		case DECIMALTOOLONG:
-			return "Extra Long Decimal";
+			return "Extra Long Dec";
 		case REALTOOLONG:
-			return "Extra Long Real";
+			return "Extra Long Re";
 		case LEADINGZEROES:
 			return "Leading Zero";
 		case LEADINGZEROESEXP:
@@ -1164,20 +1165,19 @@ char *attributeToString(int attribute) {
 
 }
 
-void printToken() {
-	//todo error with prints in switch
-	//todo print string read when got lexerr token for listing file use strncpy
+void printToken(char *lexeme) {
+		
 	if(fsa.currToken->tokenName == LEXERR) {
-		char *lexeme = strcpy()
-		fprintf(listingFile, "LEXERR:\t%s:\t%s\n", attributeToString(fsa.currToken->attribute->attrInt), );		
+		//printf( "LEXERR:\t%s:\t'%s'\n", attributeToString(fsa.currToken->attribute->attrInt), lexeme);
+		fprintf(listingFile, "LEXERR:\t%s:\t'%s'\n", attributeToString(fsa.currToken->attribute->attrInt), lexeme);		
 	}
 	switch(fsa.currToken->tokenName) {
 		case RESERVED: //int attrs
-		case RELOP:
+		case RELOP:	
 		case ADDOP:
 		case MULOP:
 		case LEXERR:
-			printf("token: %s attr: %s\n", tokenNameToString(fsa.currToken->tokenName), attributeToString(fsa.currToken->attribute->attrInt));
+			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-10d\t%-15s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName), fsa.currToken->attribute->attrInt, attributeToString(fsa.currToken->attribute->attrInt),lexeme);
 			break;
 		case OPENPAREN: //no attrs
 		case CLOSEPAREN:
@@ -1186,11 +1186,11 @@ void printToken() {
 		case PERIOD:
 		case COMMA:
 		case ASSIGNOP:
-			printf("token: %s\n", tokenNameToString(fsa.currToken->tokenName));
+			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-25s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName),"null", lexeme);
 			break;
 		case ID:
 		case NUM:
-			printf("token: %s attr: %s\n", tokenNameToString(fsa.currToken->tokenName), fsa.currToken->attribute->attrString);
+			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-10u\t%-15s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName), (unsigned)fsa.currToken->attribute->attrString, "ptr to sym tab", lexeme);
 			break;
 		default:
 			puts("Token not recognized");
