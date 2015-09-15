@@ -49,6 +49,7 @@
 #define IF 31
 #define ELSE 32
 #define IDTOOLONG 33
+#define ENDSTATE 100
 
 
 
@@ -105,7 +106,7 @@ void relopMachine(char *);
 void realMachine(char *);
 void catchAllMachine(char *);
 void newLineMachine(char *);
-void addToSymbolTable(char *);
+char **addToSymbolTable(char *);
 void loadReservedWords(char *);
 void addToReservedWords(char *, int, int);
 int checkInResWordTable(char *);
@@ -282,7 +283,7 @@ int getNextToken(char *line) {
 				//puts("int machine");
 				intMachine(line);
 				break;
-			case 101:
+			case ENDSTATE:
 				goto Cleanup;
 				Cleanup: ; //this is an empty statement so I can declare a variable
 				
@@ -352,7 +353,7 @@ void idMachine(char *line) {
 				}
 				else {
 					fsa.f--;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					if(idTooLong) {
 						struct token *idToken = (struct token *) malloc(sizeof(struct token ));
 						union Attribute *attr = (union Attribute *) malloc(sizeof(union Attribute));
@@ -373,11 +374,11 @@ void idMachine(char *line) {
 						fsa.currToken = idToken;
 						return;
 					}
-					addToSymbolTable(id);
+					
 					struct token *idToken = malloc(sizeof(struct token));
 					union Attribute *attr = malloc(sizeof(union Attribute));
 			
-					attr->attrString = id;
+					attr->attrInt = (unsigned)addToSymbolTable(id);
 					idToken->tokenName = ID;
 					idToken->attribute = attr;
 					fsa.currToken = idToken;
@@ -408,7 +409,7 @@ void relopMachine(char* line) {
 					attr->attrInt = EQUAL;
 					relopToken->attribute = attr;
 					fsa.currToken = relopToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					return;
 				}
 				else {
@@ -432,7 +433,7 @@ void relopMachine(char* line) {
 				}
 				relopToken->attribute = attr;
 				fsa.currToken = relopToken;
-				fsa.state = 101;
+				fsa.state = ENDSTATE;
 				return;
 			case 6:
 				relopToken->tokenName = RELOP;
@@ -444,7 +445,7 @@ void relopMachine(char* line) {
 				}
 				relopToken->attribute = attr;
 				fsa.currToken = relopToken;
-				fsa.state = 101;
+				fsa.state = ENDSTATE;
 				return;	
 		}	
 	}
@@ -471,10 +472,7 @@ void realMachine(char *line) {
 	int yyTrailingZero = 0;
 	while(fsa.f < MAX_LINE_LENGTH) {
 		char c = line[fsa.f];
-		// printf("realMachine got '%c'\n",c);
 		fsa.f++;
-		// printf("%dreal machine read %c\n",fsa.state, c);
-		//todo add leading zero check
 		switch(fsa.state) 
 		{
 			case 7:
@@ -529,7 +527,7 @@ void realMachine(char *line) {
 					attr->attrInt = UNRECOGNIZEDNUM;
 					errToken->attribute = attr;
 					fsa.currToken = errToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					return;
 				}
 				break;
@@ -581,7 +579,7 @@ void realMachine(char *line) {
 					}
 					numToken->attribute = attr;
 					fsa.currToken = numToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					fsa.f--;
 					return;
 				}
@@ -607,7 +605,7 @@ void realMachine(char *line) {
 					attr->attrInt = UNRECOGNIZEDNUM;
 					errToken->attribute = attr;
 					fsa.currToken = errToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					fsa.f--;
 					return;
 				}
@@ -651,7 +649,7 @@ void realMachine(char *line) {
 					}
 					numToken->attribute = attr;
 					fsa.currToken = numToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					fsa.f--;
 					return;
 				}
@@ -698,7 +696,7 @@ void realMachine(char *line) {
 					}
 					numToken->attribute = attr;
 					fsa.currToken = numToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					fsa.f--;
 					return;
 				}
@@ -718,7 +716,7 @@ void realMachine(char *line) {
 					attr->attrInt = UNRECOGNIZEDNUM;
 					errToken->attribute = attr;
 					fsa.currToken = errToken;
-					fsa.state = 101;
+					fsa.state = ENDSTATE;
 					fsa.f--;
 					return;
 				}
@@ -752,7 +750,7 @@ void addopMachine(char* line) {
 		attr->attrInt = ADD;
 		addopToken->attribute = attr;
 		fsa.currToken = addopToken;
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		return;
 	}
 	else if(c == '-') {
@@ -762,7 +760,7 @@ void addopMachine(char* line) {
 		attr->attrInt = SUBTRACT;
 		addopToken->attribute = attr;
 		fsa.currToken = addopToken;
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		return;
 	}
 	//'or' is also an addop but it is a reserved word also
@@ -793,7 +791,7 @@ void assignopMachine(char* line) {
 		}
 		else if(count == 2 && c == '=') {
 			//if second char is '=', return token
-			fsa.state = 101;
+			fsa.state = ENDSTATE;
 			struct token *assignopToken = (struct token *) malloc(sizeof(struct token));
 			assignopToken->tokenName = ASSIGNOP;
 			fsa.currToken = assignopToken;
@@ -813,7 +811,7 @@ void mulopMachine(char *line) {
 		attr->attrInt = MULTIPLY;
 		mulopToken->attribute = attr;
 		fsa.currToken = mulopToken;
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		return;
 	}
 	else if(c == '/') {
@@ -823,7 +821,7 @@ void mulopMachine(char *line) {
 		attr->attrInt = DIVIDE;
 		mulopToken->attribute = attr;
 		fsa.currToken = mulopToken;
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		return;
 	}
 	//'div', 'mod', and 'and' are also mulop but are reserved words also
@@ -866,7 +864,7 @@ void intMachine(char *line) {
 				}
 			}
 			else {
-				fsa.state = 101;
+				fsa.state = ENDSTATE;
 				fsa.f--;
 				struct token *intToken = (struct token *)malloc(sizeof(struct token));
 				union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
@@ -901,42 +899,42 @@ void catchAllMachine(char* line) {
 	fsa.f++;
 	//check for all single character tokens
 	if(c == '(') {
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		struct token *parenToken = (struct token *) malloc(sizeof(struct token));
 		parenToken->tokenName = OPENPAREN;
 		fsa.currToken = parenToken;
 		return;
 	}
 	else if(c == ')') {
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		struct token *parenToken = (struct token *) malloc(sizeof(struct token));
 		parenToken->tokenName = CLOSEPAREN;
 		fsa.currToken = parenToken;
 		return;
 	}
 	else if(c == ',') {
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		struct token *commaToken = (struct token *) malloc(sizeof(struct token));
 		commaToken->tokenName = COMMA;
 		fsa.currToken = commaToken;
 		return;
 	}
 	else if(c == ';') {
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		struct token *semicolonToken = (struct token *) malloc(sizeof(struct token));
 		semicolonToken->tokenName = SEMICOLON;
 		fsa.currToken = semicolonToken;
 		return;
 	}
 	else if(c == ':') {
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		struct token *colonToken =  (struct token *) malloc(sizeof(struct token));
 		colonToken->tokenName = COLON;
 		fsa.currToken = colonToken;
 		return;
 	}
 	else if (c == '.') {
-		fsa.state = 101;
+		fsa.state = ENDSTATE;
 		struct token *periodToken =(struct token *) malloc(sizeof(struct token));
 		periodToken->tokenName = PERIOD;
 		fsa.currToken = periodToken;
@@ -944,7 +942,7 @@ void catchAllMachine(char* line) {
 	}
 	//not a single character token? don't know what to do
 	//ignore this char and go back to initial state
-	fsa.state = 101;
+	fsa.state = ENDSTATE;
 	struct token *catchallToken = (struct token *)malloc(sizeof(struct token));
 	union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
 	catchallToken->tokenName = LEXERR;
@@ -1026,25 +1024,27 @@ struct resWordNode *findInResWordTable(char *id) {
 	return emptyNode; //not found
 }
 
-void addToSymbolTable(char* id) {
+//returns the pointer to whatever string is being used in symbol table
+char **addToSymbolTable(char* id) {
 
 	if(symbolTableRoot == NULL) {
 		symbolTableRoot = (struct node *) malloc(sizeof(struct node));
 		// printf("id '%s' added to symbolTableRoot of symbol table\n",id);
 		symbolTableRoot->next = 0;
 		symbolTableRoot->id = id;
+		return &symbolTableRoot->id;
 	}
 	else {
 		struct node *currNode = symbolTableRoot;
 		if(!strcmp(id,symbolTableRoot->id)) {
 			// printf("id '%s' already exists in symbolTableRoot of symbol table as '%s'\n",id,symbolTableRoot->id);
-			return;
+			return &symbolTableRoot->id;
 		}
 		while(currNode->next != 0) {
 			currNode = currNode->next;
 			if(!strcmp(id,currNode->id)) {
 				// printf("id '%s' already exists in symbol table\n",id);
-				return; //found id in table, don't add
+				return &currNode->id; //found id in table, don't add
 			}
 		}
 		//not found, add a new node to list
@@ -1053,7 +1053,9 @@ void addToSymbolTable(char* id) {
 		newNode->next = 0;
 		// printf("adding %s to symbol table\n",id);
 		currNode->next = newNode;
+		return &newNode->id;
 	}
+	
 }
 
 char *tokenNameToString(int tokenName) {
@@ -1106,7 +1108,7 @@ char *attributeToString(int attribute) {
 		case LEADINGZEROES:
 			return "Leading Zero";
 		case LEADINGZEROESEXP:
-			return "Leading Zero in Exp";
+			return "Lead Zero Exp";
 		case TRAILINGZERO:
 			return "Trailing zero";
 		case LESSTHAN:
@@ -1168,7 +1170,6 @@ char *attributeToString(int attribute) {
 void printToken(char *lexeme) {
 		
 	if(fsa.currToken->tokenName == LEXERR) {
-		//printf( "LEXERR:\t%s:\t'%s'\n", attributeToString(fsa.currToken->attribute->attrInt), lexeme);
 		fprintf(listingFile, "LEXERR:\t%s:\t'%s'\n", attributeToString(fsa.currToken->attribute->attrInt), lexeme);		
 	}
 	switch(fsa.currToken->tokenName) {
@@ -1189,8 +1190,10 @@ void printToken(char *lexeme) {
 			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-25s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName),"null", lexeme);
 			break;
 		case ID:
+			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-10u\t%-15s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName), fsa.currToken->attribute->attrInt, "ptr to sym tab",lexeme);
+			break;
 		case NUM:
-			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-10u\t%-15s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName), (unsigned)fsa.currToken->attribute->attrString, "ptr to sym tab", lexeme);
+			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-10s\t%-15s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName), fsa.currToken->attribute->attrString, "int string form", lexeme);
 			break;
 		default:
 			puts("Token not recognized");
