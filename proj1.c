@@ -16,6 +16,7 @@
 #define SEMICOLON 39
 #define COLON 40
 #define PERIOD 41
+#define ARRAYRANGE 42
 #define LEXERR 99
 #define INTTOOLONG 2
 #define UNRECOGNIZEDNUM 3
@@ -106,7 +107,7 @@ void relopMachine(char *);
 void realMachine(char *);
 void catchAllMachine(char *);
 void newLineMachine(char *);
-char **addToSymbolTable(char *);
+struct node *addToSymbolTable(char *);
 void loadReservedWords(char *);
 void addToReservedWords(char *, int, int);
 int checkInResWordTable(char *);
@@ -119,6 +120,7 @@ char *tokenNameToString(int);
 char *attributeToString(int);
 void printToken(char *);
 void addToken();
+void arrayRangeMachine(char *);
 
 int main(int argc, char *argv[]) 
 {
@@ -237,12 +239,12 @@ int getNextToken(char *line) {
 		switch(fsa.state) 
 		{
 			case 0:
-				// puts("whitespaceMachine");
+				//puts("whitespaceMachine");
 				fsa.f = fsa.b; 
 				whitespaceMachine(line);
 				break;
 			case 2:
-				// puts("idMachine");
+				//puts("idMachine");
 				fsa.f = fsa.b; 
 				idMachine(line);
 				break;
@@ -252,19 +254,19 @@ int getNextToken(char *line) {
 				relopMachine(line);
 				break;
 			case 7:
-				// puts("realMachine");
+				//puts("realMachine");
 				fsa.f = fsa.b; 
 				realMachine(line);
 				break;
 			case 15:
-				// puts("newLineMachine");
+				//puts("newLineMachine");
 				fsa.f = fsa.b; 
 				newLineMachine(line);
 				if(fsa.state == 0)
 					return 1;
 				break;
 			case 16:
-				// puts("addop machine");
+				 //puts("addop machine");
 				fsa.f = fsa.b; 
 				addopMachine(line);
 				break;
@@ -282,6 +284,11 @@ int getNextToken(char *line) {
 				fsa.f = fsa.b; 
 				//puts("int machine");
 				intMachine(line);
+				break;
+			case 22:
+				fsa.f = fsa.b;
+				//puts("array range machine");
+				arrayRangeMachine(line);
 				break;
 			case ENDSTATE:
 				goto Cleanup;
@@ -780,7 +787,7 @@ void assignopMachine(char* line) {
 		if(count == 1 && c != ':') {
 			//first char has to be ':' if not, exit
 			fsa.f--;
-			fsa.state = 19;
+			fsa.state = 20;
 			return; 
 		}
 		if(count == 2 && c != '=') {
@@ -888,10 +895,29 @@ void intMachine(char *line) {
 	}
 } 
 
-void parenMachine(char *line) {
-	char c = line[fsa.f];
-	fsa.f++;
 
+
+void arrayRangeMachine(char *line) {
+	
+	while(fsa.f < MAX_LINE_LENGTH) {
+		char c = line[fsa.f];
+		fsa.f++;
+		if(c == '.') {
+			if(fsa.state == 22) 
+				fsa.state = 23;
+			else if(fsa.state == 23) {
+				struct token *arrToken = (struct token *)malloc(sizeof(struct token));
+				arrToken->tokenName = ARRAYRANGE;
+				fsa.currToken = arrToken;
+				fsa.state = ENDSTATE;
+				return;
+			}
+		}
+		else {
+			fsa.state = 24;
+			return;
+		}
+	}
 }
 
 void catchAllMachine(char* line) {
@@ -1025,35 +1051,31 @@ struct resWordNode *findInResWordTable(char *id) {
 }
 
 //returns the pointer to whatever string is being used in symbol table
-char **addToSymbolTable(char* id) {
+struct node *addToSymbolTable(char* id) {
 
 	if(symbolTableRoot == NULL) {
 		symbolTableRoot = (struct node *) malloc(sizeof(struct node));
-		// printf("id '%s' added to symbolTableRoot of symbol table\n",id);
 		symbolTableRoot->next = 0;
 		symbolTableRoot->id = id;
-		return &symbolTableRoot->id;
+		return symbolTableRoot;
 	}
 	else {
 		struct node *currNode = symbolTableRoot;
 		if(!strcmp(id,symbolTableRoot->id)) {
-			// printf("id '%s' already exists in symbolTableRoot of symbol table as '%s'\n",id,symbolTableRoot->id);
-			return &symbolTableRoot->id;
+			return symbolTableRoot;
 		}
 		while(currNode->next != 0) {
 			currNode = currNode->next;
 			if(!strcmp(id,currNode->id)) {
-				// printf("id '%s' already exists in symbol table\n",id);
-				return &currNode->id; //found id in table, don't add
+				return currNode; //found id in table, don't add
 			}
 		}
 		//not found, add a new node to list
 		struct node *newNode = (struct node *) malloc(sizeof(struct node));
 		newNode->id = id;
 		newNode->next = 0;
-		// printf("adding %s to symbol table\n",id);
 		currNode->next = newNode;
-		return &newNode->id;
+		return newNode;
 	}
 	
 }
@@ -1089,6 +1111,8 @@ char *tokenNameToString(int tokenName) {
 			return "period";
 		case COMMA:
 			return "comma";
+		case ARRAYRANGE:
+			return "arr range";
 		default:
 			return "unknown";
 	}
@@ -1187,6 +1211,7 @@ void printToken(char *lexeme) {
 		case PERIOD:
 		case COMMA:
 		case ASSIGNOP:
+		case ARRAYRANGE:
 			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-25s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName),"null", lexeme);
 			break;
 		case ID:
