@@ -50,6 +50,7 @@
 #define IF 31
 #define ELSE 32
 #define IDTOOLONG 33
+#define EOF 34
 #define ENDSTATE 100
 
 
@@ -197,6 +198,7 @@ char **readFileLineByLine(FILE *source, int lineCount)
 			linePos++;
 		}
 	}
+	lines[lineNumber][linePos] = EOF;
 	return lines;
 }
 
@@ -300,6 +302,8 @@ int getNextToken(char *line) {
 				
 				fsa.b = fsa.f;
 				printToken(lexeme);
+				if(fsa.currToken->tokenType == EOF) 
+					return 1; //stop
 				return 0;
 			default:
 				fsa.f = fsa.b; 
@@ -964,6 +968,13 @@ void catchAllMachine(char* line) {
 		struct token *periodToken =(struct token *) malloc(sizeof(struct token));
 		periodToken->tokenName = PERIOD;
 		fsa.currToken = periodToken;
+		return;
+	}
+	else if (c == EOF) {
+		fsa.state = ENDSTATE;
+		struct token *eofToken = (struct token *)malloc(sizeof(struct token));
+		eofToken-> = EOF;
+		fsa.currToken = eofToken;
 		return;
 	}
 	//not a single character token? don't know what to do
