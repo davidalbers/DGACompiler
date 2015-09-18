@@ -1,12 +1,14 @@
-1:	abcdefghijlmno 
-LEXERR:	Extra long id:	'abcdefghijlmno'
-2:	12345678901 1.234567 1.23E456 01 1.40 1.4E01 1.
-LEXERR:	Extra Long Int:	'12345678901'
-LEXERR:	Extra Long Dec:	'1.234567'
-LEXERR:	Extra Long Re:	'1.23E456'
-LEXERR:	Leading Zero:	'01'
-LEXERR:	Trailing zero:	'1.40'
-LEXERR:	Lead Zero Exp:	'1.4E01'
-LEXERR:	Unrec number:	'1.'
-3:	&
-LEXERR:	Unrecog Symbol:	'&'
+1:	$$
+LEXERR:	Unrecog Symbol:	'$'
+LEXERR:	Unrecog Symbol:	'$'
+2:	3.4E+
+LEXERR:	Unrec number:	'3.4E+'
+3:	34E+.
+LEXERR:	Unrec number:	'34E+'
+4:	34.E+
+LEXERR:	Unrec number:	'34.'
+5:	34+E4.
+6:	34.E
+LEXERR:	Unrec number:	'34.'
+7:	a := 2;
+8:	a := 3;

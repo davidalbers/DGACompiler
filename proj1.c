@@ -17,6 +17,7 @@
 #define COLON 40
 #define PERIOD 41
 #define ARRAYRANGE 42
+#define ENDOFFILE 43
 #define LEXERR 99
 #define INTTOOLONG 2
 #define UNRECOGNIZEDNUM 3
@@ -50,7 +51,6 @@
 #define IF 31
 #define ELSE 32
 #define IDTOOLONG 33
-#define EOF 34
 #define ENDSTATE 100
 
 
@@ -161,6 +161,7 @@ void sourceToListing(char *sourcePath)
 				}
 				tokenizingLine++;
 			}
+			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-25s\n",(tokenizingLine+1), ENDOFFILE, tokenNameToString(ENDOFFILE),"null");
 		}
 		else 
 		{
@@ -198,7 +199,7 @@ char **readFileLineByLine(FILE *source, int lineCount)
 			linePos++;
 		}
 	}
-	lines[lineNumber][linePos] = EOF;
+
 	return lines;
 }
 
@@ -302,8 +303,10 @@ int getNextToken(char *line) {
 				
 				fsa.b = fsa.f;
 				printToken(lexeme);
-				if(fsa.currToken->tokenType == EOF) 
+				if(fsa.currToken->tokenName == ENDOFFILE) {
+					puts("got end of line");
 					return 1; //stop
+				}
 				return 0;
 			default:
 				fsa.f = fsa.b; 
@@ -971,12 +974,13 @@ void catchAllMachine(char* line) {
 		return;
 	}
 	else if (c == EOF) {
+		puts("eof machine");
 		fsa.state = ENDSTATE;
 		struct token *eofToken = (struct token *)malloc(sizeof(struct token));
-		eofToken-> = EOF;
+		eofToken->tokenName = ENDOFFILE;
 		fsa.currToken = eofToken;
 		return;
-	}
+	} 
 	//not a single character token? don't know what to do
 	//ignore this char and go back to initial state
 	fsa.state = ENDSTATE;
@@ -1124,6 +1128,8 @@ char *tokenNameToString(int tokenName) {
 			return "comma";
 		case ARRAYRANGE:
 			return "arr range";
+		case ENDOFFILE:
+			return "end of file";
 		default:
 			return "unknown";
 	}
