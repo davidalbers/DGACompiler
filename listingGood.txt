@@ -1,9 +1,0 @@
-1:	program var integer function begin end then if else mod or div and
-2:	a a1 a
-3:	1 1.0 1.2E3 1.2E-3
-4:	< <= <> > >= =
-5:	+ -
-6:	* /
-7:	:=
-8:	() , ; : . ..
-9:	

@@ -1,8 +1,8 @@
-program var integer function begin end then if else mod or div and
-a a1 a
-1 1.0 1.2E3 1.2E-3
-< <= <> > >= =
-+ -
-* /
-:=
-() , ; : . ..
+$$
+3.4E+
+34E+.
+34.E+
+34+E4.
+34.E
+a := 2;
+a := 3;
