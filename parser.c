@@ -2,12 +2,17 @@
 #include <stdlib.h>
 #include "lex.h"
 
+struct token *tok;
+void parse();
+void sign();
+void match();
+
 int main(int argc, char *argv[]) 
 {
 	if(argc == 2) 
 	{
 		loadFiles(argv[1]);
-		
+		parse();
 	}
 	else
 	{
@@ -19,13 +24,27 @@ int main(int argc, char *argv[])
 }
 
 void parse() {
-	tok = getToken();
+	tok = getNextToken();
+	sign();
+	match();
 	//match end of file
 }
 
 void sign() {
-	switch(tok) 
-	{
-		case 
+	switch(tok->attribute->attrInt) {
+		case ADD:
+			match(ADD);
+			puts("add");
+			break;
+		case SUBTRACT:
+			match(SUBTRACT);
+			break;
+		default:
+			//error
+			break;
 	}
+}
+
+void match() {
+	//?
 }
