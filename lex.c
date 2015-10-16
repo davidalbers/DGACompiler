@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "lex.h"
 #define MAX_LINE_LENGTH 72
 #define RESERVED 0
 #define ID 30
@@ -105,7 +106,6 @@ int fileLength(FILE *);
 char **readFileLineByLine(FILE *, int);
 void idMachine(char *);
 void whitespaceMachine(char *);
-struct token *getNextToken();
 void relopMachine(char *);
 void longRealMachine(char *);
 void realMachine(char *);
@@ -126,56 +126,12 @@ void printToken(char *);
 void addToken();
 void arrayRangeMachine(char *);
 
-int main(int argc, char *argv[]) 
-{
-	
-	if(argc == 2) 
-	{
-		loadReservedWords("reservedWords.txt");
-		sourceToListing(argv[1]);
-	}
-	else
-	{
-		puts("Invalid number of arguments. Valid syntax is 'proj1 /path/to/source'");
-		return -1;
-	}
-	puts("Program finished");
-	return 0;
+
+void loadFiles(char* src) {
+	loadReservedWords("reservedWords.txt");
+	sourceToListing(src);
 }
 
-// void sourceToListing(char *sourcePath) 
-// {
-// 	FILE *src = fopen(sourcePath, "r"); 
-// 	if(src != NULL)
-// 	{
-// 		listingFile = fopen("listing.txt", "w");
-// 		tokenFile = fopen("token.txt", "w");
-// 		if(listingFile != NULL && tokenFile != NULL) 
-// 		{
-// 			int numberLines = fileLineCount(src);
-// 			char **lines = readFileLineByLine(src, numberLines);
-// 			fprintf(tokenFile,"LINE\t%-12s\t%-25s\tLEXEME\n", "TOKEN-TYPE", "ATTRIBUTE");
-// 			while(tokenizingLine < numberLines) 
-// 			{
-// 				printf("%d:\t%s",(tokenizingLine+1), lines[tokenizingLine]);
-// 				fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), lines[tokenizingLine] );
-// 				while(getNextToken(lines[tokenizingLine]) == 0) {
-
-// 				}
-// 				tokenizingLine++;
-// 			}
-// 			fprintf(tokenFile,"%d:\t\t%d %-10s\t%-25s\n",(tokenizingLine+1), ENDOFFILE, tokenNameToString(ENDOFFILE),"null");
-// 		}
-// 		else 
-// 		{
-// 			perror("Could not open listing file!");
-// 		}
-// 	}
-// 	else
-// 	{
-// 		perror("Could not open source file!");
-// 	}
-// }
 
 void sourceToListing(char *sourcePath) 
 {
@@ -187,14 +143,7 @@ void sourceToListing(char *sourcePath)
 		if(listingFile != NULL && tokenFile != NULL) 
 		{
 			numberLines = fileLineCount(src);
-			puts("got line count");
 			fileLineByLine = readFileLineByLine(src, numberLines);
-			puts("read file");
-			while(getNextToken()->tokenName != ENDOFFILE) {
-				puts("printing token");
-				printToken("yolo");
-
-			}
 		}
 		else 
 		{
@@ -232,7 +181,7 @@ char **readFileLineByLine(FILE *source, int lineCount)
 			linePos++;
 		}
 	}
-	lines[lineNumber][linePos] = EOF;
+
 	return lines;
 }
 
@@ -1095,7 +1044,7 @@ void catchAllMachine(char* line) {
 		fsa.currToken = periodToken;
 		return;
 	}
-	else if (c == EOF) {
+	else if (c == 0) {
 		puts("eof machine");
 		fsa.state = ENDSTATE;
 		struct token *eofToken = (struct token *)malloc(sizeof(struct token));
@@ -1105,7 +1054,7 @@ void catchAllMachine(char* line) {
 	} 
 	//not a single character token? don't know what to do
 	//ignore this char and go back to initial state
-	printf("got unrecognized '%c'%d,%d\n", c, fsa.f, tokenizingLine);
+	printf("got unrecognizedd '%d'%d,%d\n", c, fsa.f, tokenizingLine);
 	fsa.state = ENDSTATE;
 	struct token *catchallToken = (struct token *)malloc(sizeof(struct token));
 	union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
@@ -1359,6 +1308,9 @@ void printToken(char *lexeme) {
 			break;
 		case NUM:
 			printf("%d:\t\t%d %-10s\t%-10s\t%-15s\t%s\n",(tokenizingLine+1), fsa.currToken->tokenName, tokenNameToString(fsa.currToken->tokenName), fsa.currToken->attribute->attrString, "int string form", lexeme);
+			break;
+		case ENDOFFILE:
+			puts("end of file");
 			break;
 		default:
 			puts("Token not recognized");
