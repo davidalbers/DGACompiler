@@ -11,3 +11,5 @@ mod 34 21
 or 33 17
 div 34 20
 and 34 22
+array 0 34
+of 0 35

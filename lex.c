@@ -63,8 +63,7 @@ void addopMachine(char *);
 void mulopMachine(char *);
 void assignopMachine(char *);
 void intMachine(char *);
-char *tokenNameToString(int);
-char *attributeToString(int);
+
 void printToken(char *);
 void addToken();
 void arrayRangeMachine(char *);
@@ -988,13 +987,26 @@ void catchAllMachine(char* line) {
 		return;
 	}
 	else if (c == 0) {
-		puts("eof machine");
 		fsa.state = ENDSTATE;
 		struct token *eofToken = (struct token *)malloc(sizeof(struct token));
 		eofToken->tokenName = ENDOFFILE;
 		fsa.currToken = eofToken;
 		return;
 	} 
+	else if (c == "[") {
+		fsa.state = ENDSTATE;
+		struct token *bracketToken = (struct token *)malloc(sizeof(struct token));
+		eofToken->tokenName = OPENBRACKET;
+		fsa.currToken = bracketToken;
+		return;
+	}
+	else if (c == "]") {
+		fsa.state = ENDSTATE;
+		struct token *bracketToken = (struct token *)malloc(sizeof(struct token));
+		eofToken->tokenName = CLOSEBRACKET;
+		fsa.currToken = bracketToken;
+		return;
+	}
 	//not a single character token? don't know what to do
 	//ignore this char and go back to initial state
 	printf("got unrecognizedd '%d'%d,%d\n", c, fsa.f, tokenizingLine);
