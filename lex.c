@@ -993,17 +993,17 @@ void catchAllMachine(char* line) {
 		fsa.currToken = eofToken;
 		return;
 	} 
-	else if (c == "[") {
+	else if (c == '[') {
 		fsa.state = ENDSTATE;
 		struct token *bracketToken = (struct token *)malloc(sizeof(struct token));
-		eofToken->tokenName = OPENBRACKET;
+		bracketToken->tokenName = OPENBRACKET;
 		fsa.currToken = bracketToken;
 		return;
 	}
-	else if (c == "]") {
+	else if (c == ']') {
 		fsa.state = ENDSTATE;
 		struct token *bracketToken = (struct token *)malloc(sizeof(struct token));
-		eofToken->tokenName = CLOSEBRACKET;
+		bracketToken->tokenName = CLOSEBRACKET;
 		fsa.currToken = bracketToken;
 		return;
 	}
