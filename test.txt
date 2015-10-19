@@ -1,1 +1,9 @@
 program testProg (a);
+var a : int;
+var b,c : real
+begin
+  if(1 > a) then
+    a := 2
+  else
+    b := 2
+end
