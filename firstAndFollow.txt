@@ -1,0 +1,133 @@
+first(program) → { program }
+follow(program) → { $ }
+
+first(program’) → { var, begin, fun }
+follow(program’) → {$} 
+
+ 
+first(program’’) → {begin, fun}
+follow(program’’) → {$}
+
+
+first(idLst) → {id}
+follow(idLst) → {)}
+
+first(idLst’) → {, , ϵ}
+follow(idLst’) → { )}
+
+first(decls) → {var} 
+follow(decls) → {begin, fun}
+
+first(decls’) → {var, ϵ }
+follow(decls’) → {begin, fun}
+
+first(type) → {int, real, array}
+follow(type) → {; , ϵ , } , ) }
+
+
+
+first(stdType) → {int, real}
+follow(stdType) → {; , ϵ , } , ) }
+
+first(subPrgDecls) → {fun}
+follow(subPrgDecls) → {begin}
+
+
+first(subPrgDecls’) → {fun, ϵ }
+follow(subPrgDecls’) → {begin}
+
+
+first(subprgDecl) → {fun}
+follow(subprgDecl) → {;}
+
+first(subprgDecl’) → {var, begin, fun}
+follow(subprgDecl’) → {;}
+
+
+first(subprgDecl’’) → {begin, fun}
+follow(subprgDecl’’) → {}
+
+first(subprgHead) → {fun}
+follow(subprgHead) → {var, begin, fun}
+
+first(subprgHead’) → {:, ( }
+follow(subprgHead’) → {var, begin, fun}
+
+first(args) → { ( } 
+follow(args) → { : }
+
+first(paramLst) → {id}
+follow(paramLst) → { ) }
+
+first(paramLst’) → {; , ϵ }
+follow(paramLst’) → { ) }
+
+first(cpdStmt) → {begin}
+follow(cpdStmt) → {. , ; , end }
+
+first(cpdStmt’) → {end , if, while, id, begin}
+follow(cpdStmt’) → {. , ; , end }
+
+first(optStmts) → {if, while, id, begin }
+follow(optStmts) → {end}
+
+first(stmtLst) → {if, while, id, begin}
+follow(stmtLst) → {end}
+
+first(stmtLst’) → {; , ϵ}
+follow(stmtLst’) → {end}
+
+first(stmt) → {if, while, id, begin}
+follow(stmt) → {end, else, ; } 
+
+
+
+
+
+
+first(stmt’) → {else , ϵ}
+follow(stmt’) → {end,else, ; }
+
+
+first(var) → {id}
+follow(var) → {asnOp, id}
+
+first(var’) → {[,ϵ}
+follow(var’) → {asnOp, id}
+
+
+first(expLst) → {+,-,id,num,(,not}
+follow(expLst) → { ) }
+
+first(expLst’) → {, , ϵ}
+follow(expLst’) → { ) }
+
+
+first(exp) → {+,-,id,num,(,not}
+follow(exp) → {),],then, do, end, else, comma, ;}
+
+first(exp’) → {relop, ϵ}
+follow(exp’) → {),],then, do, end, else, comma, ;}
+
+first(simExp) → {+,-,id,num,(,not}
+follow(simExp) → {),],then, do, end, else, comma,relop, ;}
+
+
+first(simExp’) → {addOp, ϵ}
+follow(simExp’) → {),],then, do, end, else, comma, relop, ;}
+
+first(term) → {id,num,(,not}
+follow(term) → {addOp,),],then, do, end, else, comma, relop, ;}
+
+first(term’) → {mulop, ϵ}
+follow(term’) → {addOp, ),],then, do, end, else, comma, relop, ;}
+
+first(factor) → {id,num,(,not}
+follow(factor) → {mulop, addOp, ),],then, do, end, else, comma, relop, ;}
+
+first(factor’) → {(,[, ϵ }
+follow(factor’) → {mulop, addOp, ),],then, do, end, else, comma, relop, ;}
+
+
+first(sign) → {+,-}
+follow(sign) → {id,num,(,not}
