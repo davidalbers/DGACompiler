@@ -1,6 +1,7 @@
 #define MAX_LINE_LENGTH 72
 
 //attr ints
+#define NONE 0
 #define INTTOOLONG 2
 #define UNRECOGNIZEDNUM 3
 #define DECIMALTOOLONG 4

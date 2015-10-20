@@ -147,7 +147,7 @@ void decls() {
 	switch(tok->attribute->attrInt) {
 		case VAR:
 			match(VAR);
-			idLst();
+			match(ID);
 			match(COLON);
 			type();
 			match(SEMICOLON);
@@ -162,7 +162,7 @@ void declsPrime() {
 	switch(tok->attribute->attrInt) {
 		case VAR:
 			match(VAR);
-			idLst();
+			match(ID);
 			match(COLON);
 			type();
 			match(SEMICOLON);
@@ -181,15 +181,10 @@ void type() {
 		stdType();
 	}
 	else if(tok->attribute->attrInt == ARRAY) {
-		puts("entered array decl, match array");
 		match(ARRAY);
-		puts("match [");
 		match(OPENBRACKET);
-		puts("match num");
 		match(NUM);
-		puts("match ..");
 		match(ARRAYRANGE);
-		puts("match num");
 		match(NUM);
 		match(CLOSEBRACKET);
 		match(OF);
@@ -361,11 +356,8 @@ void optStmts() {
 
 void stmtLst() {
 	if(tok->tokenName == ID || tok->attribute->attrInt == BEGIN || tok->attribute->attrInt == IF || tok->attribute->attrInt == WHILE) {
-		puts("stmtLst calling stmt");
 		stmt();
-		puts("stmtLst calling stmtLst'");
 		stmtLstPrime();
-		puts("stmtLst exit");
 	}
 	else 
 		puts("synerr stmtLst, id begin, if while");
@@ -374,9 +366,7 @@ void stmtLst() {
 void stmtLstPrime() {
 	if(tok->tokenName == SEMICOLON) {
 		match(SEMICOLON);
-		puts("stmtLst' looking for another stmt");
 		stmt();
-		puts("stmtLst' found another stmt");
 		stmtLstPrime();
 	}
 	else if (tok->attribute->attrInt == END) 
@@ -389,9 +379,7 @@ void stmt() {
 	if(tok->tokenName == ID) {
 		var();
 		match(ASSIGNOP);
-		puts("var assn stmt calling expr");
 		expr();
-		puts("exit var assn stmt");
 	} 
 	else if(tok->attribute->attrInt == BEGIN) {
 		cpdStmt();
@@ -402,14 +390,11 @@ void stmt() {
 		match(THEN);
 		stmt();
 		stmtPrime();
-		puts("exit if stmt");
 	} 
 	else if( tok->attribute->attrInt == WHILE) {
-		puts("enter while stmt");
 		match(WHILE);
 		expr();
 		match(DO);
-		puts("exit while stmt");
 		stmt();
 	}
 	else 
@@ -478,20 +463,17 @@ void expLstPrime() {
 void expr() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM ||
 		tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT || tok->attribute->attrInt == NOT) {
-		puts("expr enter");
 		simExp();
-		puts("expr call exprPrime");
 		exprPrime();
-		puts("expr exit");
 	}
 	else
 		puts("synerr exp ( id num + - not");
 }
 
 void exprPrime() { 
-	if(tok->tokenName == OPENPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
+	if(tok->tokenName == CLOSEPAREN || tok->tokenName == SEMICOLON || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 	 tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == COMMA || 
-	 tok->attribute->attrInt == ELSE || tok->tokenName == SEMICOLON) {
+	 tok->attribute->attrInt == ELSE ) {
 		return;//epsilon
 	}
 	else if(tok->tokenName == RELOP) {
@@ -499,15 +481,13 @@ void exprPrime() {
 		simExp();
 	}
 	else 
-		puts("synerr");
+		puts("synerr exprPrime");
 }
 
 void simExp() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM || tok->attribute->attrInt == NOT) {
 		term();
-		puts("simexp calling simExp'");
 		simExpPrime();
-		puts("simexp exit");	
 	}
 	else if(tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT) {
 		sign();
@@ -521,7 +501,6 @@ void simExp() {
 void simExpPrime() {
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == SEMICOLON || tok->tokenName == RELOP || tok->tokenName == CLOSEBRACKET || tok->tokenName == COMMA || tok->attribute->attrInt == END ||
 	  tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->attribute->attrInt == ELSE ) {
-		 puts("simexp' exit");
 		return;//epsilon
 	}
 	else if(tok->tokenName == ADDOP) {
@@ -537,20 +516,16 @@ void term() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM || tok->attribute->attrInt == NOT) {
 		
 		factor();
-		puts("term calling term'");
 		termPrime();
-		puts("term exit");
 	}
 	else
 		puts("synerr term ( id num not");
 }
 
 void termPrime() {
-	puts("term' enter");
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == RELOP || tok->tokenName == SEMICOLON || tok->tokenName == CLOSEBRACKET || 
 			tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
 			 tok->tokenName == COMMA || tok->attribute->attrInt == ELSE ||tok->attribute->attrInt == END ) {
-		puts("term' exit");
 		return;//epsilon
 	}
 	else if(tok->tokenName == MULOP) {
@@ -595,7 +570,7 @@ void factorPrime() {
 		match(CLOSEBRACKET);
 	}
 	else if(tok->tokenName == CLOSEPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
-		tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->attribute->attrInt == ADDOP ||
+		tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
 		 tok->attribute->attrInt == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP) {
 		return;//epsilon
 	}

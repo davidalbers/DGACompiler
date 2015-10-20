@@ -351,8 +351,8 @@ void idMachine(char *line) {
 
 void relopMachine(char* line) {
 	while(fsa.f < MAX_LINE_LENGTH) {
-		struct token *relopToken = malloc(sizeof(struct token));
-		union Attribute *attr = malloc(sizeof(union Attribute));
+		struct token *relopToken = (struct token *)malloc(sizeof(struct token));
+		union Attribute *attr = (union Attribute *)malloc(sizeof(union Attribute));
 		char relop = line[fsa.f];
 		 // printf("relopMachine got '%c'\n",relop);
 		fsa.f++;
@@ -821,6 +821,8 @@ void assignopMachine(char* line) {
 			fsa.state = ENDSTATE;
 			struct token *assignopToken = (struct token *) malloc(sizeof(struct token));
 			assignopToken->tokenName = ASSIGNOP;
+			union Attribute *assignopAttr = (union Attribute *)malloc(sizeof(union Attribute));
+			assignopToken->attribute = assignopAttr;
 			fsa.currToken = assignopToken;
 			return;
 		}
@@ -948,6 +950,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *parenToken = (struct token *) malloc(sizeof(struct token));
 		parenToken->tokenName = OPENPAREN;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		parenToken->attribute = catchallAttr;
 		fsa.currToken = parenToken;
 		return;
 	}
@@ -955,6 +959,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *parenToken = (struct token *) malloc(sizeof(struct token));
 		parenToken->tokenName = CLOSEPAREN;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		parenToken->attribute = catchallAttr;
 		fsa.currToken = parenToken;
 		return;
 	}
@@ -962,13 +968,17 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *commaToken = (struct token *) malloc(sizeof(struct token));
 		commaToken->tokenName = COMMA;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		commaToken->attribute = catchallAttr;
 		fsa.currToken = commaToken;
 		return;
 	}
 	else if(c == ';') {
 		fsa.state = ENDSTATE;
 		struct token *semicolonToken = (struct token *) malloc(sizeof(struct token));
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
 		semicolonToken->tokenName = SEMICOLON;
+		semicolonToken->attribute = catchallAttr;
 		fsa.currToken = semicolonToken;
 		return;
 	}
@@ -976,6 +986,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *colonToken =  (struct token *) malloc(sizeof(struct token));
 		colonToken->tokenName = COLON;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		colonToken->attribute = catchallAttr;
 		fsa.currToken = colonToken;
 		return;
 	}
@@ -983,6 +995,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *periodToken =(struct token *) malloc(sizeof(struct token));
 		periodToken->tokenName = PERIOD;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		periodToken->attribute = catchallAttr;
 		fsa.currToken = periodToken;
 		return;
 	}
@@ -990,6 +1004,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *eofToken = (struct token *)malloc(sizeof(struct token));
 		eofToken->tokenName = ENDOFFILE;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		eofToken->attribute = catchallAttr;
 		fsa.currToken = eofToken;
 		return;
 	} 
@@ -997,6 +1013,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *bracketToken = (struct token *)malloc(sizeof(struct token));
 		bracketToken->tokenName = OPENBRACKET;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		bracketToken->attribute = catchallAttr;
 		fsa.currToken = bracketToken;
 		return;
 	}
@@ -1004,6 +1022,8 @@ void catchAllMachine(char* line) {
 		fsa.state = ENDSTATE;
 		struct token *bracketToken = (struct token *)malloc(sizeof(struct token));
 		bracketToken->tokenName = CLOSEBRACKET;
+		union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));
+		bracketToken->attribute = catchallAttr;
 		fsa.currToken = bracketToken;
 		return;
 	}
