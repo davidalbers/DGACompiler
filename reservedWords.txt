@@ -16,5 +16,4 @@ of 0 35
 while 0 36
 not 0 37
 do 0 38
-int 0 39
 real 0 40

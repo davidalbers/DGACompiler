@@ -38,7 +38,6 @@
 #define WHILE 36
 #define NOT 37
 #define DO 38
-#define INT 39
 #define REAL 40
 //types
 #define ID 50

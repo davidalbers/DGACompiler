@@ -1,9 +1,11 @@
 program testProg (a);
-var a : int;
-var b,c : real
+var a : integer;
+var b,c : real;
+var d : array[0 .. 3] of integer;
 begin
   if(1 > a) then
     a := 2
   else
-    b := 2
-end
+    b := 2;
+  while ( 0 ) do c := 6;
+end .

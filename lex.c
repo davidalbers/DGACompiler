@@ -1157,6 +1157,10 @@ char *tokenNameToString(int tokenName) {
 			return "arr range";
 		case ENDOFFILE:
 			return "end of file";
+		case OPENBRACKET:
+			return "open bracket";
+		case CLOSEBRACKET:
+			return "close bracket";
 		default:
 			return "unknown";
 	}
@@ -1229,6 +1233,18 @@ char *attributeToString(int attribute) {
 			return "Unrecog Symbol";
 		case IDTOOLONG:
 			return "Extra long id";
+		case ARRAY:
+			return "array";
+		case OF:
+			return "of";
+		case WHILE:
+			return "while";
+		case NOT:
+			return "not";
+		case DO:
+			return "do";
+		case REAL:
+			return "real";
 		default:
 			return "unknown";
 	}
