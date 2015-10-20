@@ -134,7 +134,6 @@ void idLstPrime() {
 			match(ID);
 			idLstPrime();
 			break;
-		case COLON:
 		case CLOSEPAREN:
 			break; //epsilon
 		default:
