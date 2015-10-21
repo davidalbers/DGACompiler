@@ -75,7 +75,7 @@ void program() {
 	if(tok->attribute->attrInt == PROGRAM){
 		puts("program {\t");
 		if(!match(PROGRAM)) {synchType(NT_PROGRAM); return;}
-		if(!match( ID)) {synchType(NT_PROGRAM); return;}
+		if(!match(ID)) {synchType(NT_PROGRAM); return;}
 		if(!match(OPENPAREN)) {synchType(NT_PROGRAM); return;}
 		idLst();
 		if(!match(CLOSEPAREN)) {synchType(NT_PROGRAM); return;}
