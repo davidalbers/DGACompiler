@@ -717,59 +717,74 @@ int synch(struct token * tok, int syncingType) {
 		tok->tokenName == COMMA || tok->tokenName == SEMICOLON || tok->tokenName == COLON || tok->tokenName == PERIOD || tok->tokenName == ARRAYRANGE || 
 		tok->tokenName == ENDOFFILE || tok->tokenName == RELOP || tok->tokenName == ADDOP || tok->tokenName == MULOP || tok->tokenName == OPENBRACKET || tok->tokenName == CLOSEBRACKET) {
 		tokType = tok->tokenName;
-		switch(syncingType) {
-			case NT_PROGRAM:
-				syncSet = (int[]){ENDOFFILE};
-				break;
-			case NT_SUBPRGDECL:
-				syncSet = (int[]){SEMICOLON,ENDOFFILE};
-				break;
-			case NT_SUBPRGHEAD:
-				syncSet = (int[]){VAR,BEGIN,FUNCTION,ENDOFFILE};
-				break;
-			case NT_ARGS:
-				syncSet = (int[]){COLON, ENDOFFILE};
-				break;
-			case NT_PARAMLST:
-				syncSet = (int[]){CLOSEPAREN, ENDOFFILE};
-				break;
-			case NT_CPDSTMT:
-				syncSet = (int[]){PERIOD , SEMICOLON , END, ENDOFFILE};
-				break;
-			case NT_OPTSTMTS:
-				syncSet = (int[]){END, ENDOFFILE};
-				break;
-			case NT_STMTLST:
-				syncSet = (int[]){END, ENDOFFILE};
-				break;
-			case NT_STMT:
-				syncSet = (int[]){END, ELSE, SEMICOLON, ENDOFFILE};
-				break;
-			case NT_VAR:
-				syncSet = (int[]){ASSIGNOP, ID, ENDOFFILE};
-				break;
-			case NT_EXPLST:
-				syncSet = (int[]){CLOSEPAREN,ENDOFFILE};
-				break;
-			case NT_EXPR:
-				syncSet = (int[]){CLOSEPAREN,CLOSEBRACKET,THEN,DO,END,ELSE,COMMA,SEMICOLON,ENDOFFILE};
-				break;
-			case NT_SIMEXP:
-				syncSet = (int[]){CLOSEPAREN,CLOSEBRACKET,THEN,DO,END,ELSE,COMMA,RELOP,SEMICOLON,ENDOFFILE};
-				break;
-			case NT_TERM:
-				syncSet = (int[]){ADDOP, CLOSEPAREN, CLOSEBRACKET, THEN, DO, END, ELSE, COMMA, RELOP, SEMICOLON, ENDOFFILE};
-				break;
-			case NT_FACTOR:
-				syncSet = (int[]){MULOP, ADDOP, CLOSEPAREN, CLOSEBRACKET, THEN, DO, END, ELSE, COMMA, RELOP, SEMICOLON, ENDOFFILE};
-				break;
-			case NT_SIGN:
-				syncSet = (int[]){ID, NUM, NOT, OPENPAREN, ENDOFFILE};
-				break;
-		}
 	}
 	else
 		tokType = tok->attribute->attrInt;
+	switch(syncingType) {
+		case NT_PROGRAM:
+			syncSet = (int[]){ENDOFFILE};
+			break;
+		case NT_IDLST:
+			syncSet = (int[]){CLOSEPAREN,ENDOFFILE};
+			break;
+		case NT_DECLS:
+			syncSet = (int[]){VAR,BEGIN,ENDOFFILE};
+			break;
+		case NT_TYPE:
+			syncSet = (int[]) {SEMICOLON , CLOSEPAREN, ENDOFFILE };
+			break;
+		case NT_STDTYPE:
+			syncSet = (int[]) {SEMICOLON , CLOSEPAREN, ENDOFFILE };
+			break;
+		case NT_SUBPRGDECLS:
+			syncSet = (int[]) {BEGIN, ENDOFFILE};
+			break;
+		case NT_SUBPRGDECL:
+			syncSet = (int[]){SEMICOLON,ENDOFFILE};
+			break;
+		case NT_SUBPRGHEAD:
+			syncSet = (int[]){VAR,BEGIN,FUNCTION,ENDOFFILE};
+			break;
+		case NT_ARGS:
+			syncSet = (int[]){COLON, ENDOFFILE};
+			break;
+		case NT_PARAMLST:
+			syncSet = (int[]){CLOSEPAREN, ENDOFFILE};
+			break;
+		case NT_CPDSTMT:
+			syncSet = (int[]){PERIOD , SEMICOLON , END, ENDOFFILE};
+			break;
+		case NT_OPTSTMTS:
+			syncSet = (int[]){END, ENDOFFILE};
+			break;
+		case NT_STMTLST:
+			syncSet = (int[]){END, ENDOFFILE};
+			break;
+		case NT_STMT:
+			syncSet = (int[]){END, ELSE, SEMICOLON, ENDOFFILE};
+			break;
+		case NT_VAR:
+			syncSet = (int[]){ASSIGNOP, ID, ENDOFFILE};
+			break;
+		case NT_EXPLST:
+			syncSet = (int[]){CLOSEPAREN,ENDOFFILE};
+			break;
+		case NT_EXPR:
+			syncSet = (int[]){CLOSEPAREN,CLOSEBRACKET,THEN,DO,END,ELSE,COMMA,SEMICOLON,ENDOFFILE};
+			break;
+		case NT_SIMEXP:
+			syncSet = (int[]){CLOSEPAREN,CLOSEBRACKET,THEN,DO,END,ELSE,COMMA,RELOP,SEMICOLON,ENDOFFILE};
+			break;
+		case NT_TERM:
+			syncSet = (int[]){ADDOP, CLOSEPAREN, CLOSEBRACKET, THEN, DO, END, ELSE, COMMA, RELOP, SEMICOLON, ENDOFFILE};
+			break;
+		case NT_FACTOR:
+			syncSet = (int[]){MULOP, ADDOP, CLOSEPAREN, CLOSEBRACKET, THEN, DO, END, ELSE, COMMA, RELOP, SEMICOLON, ENDOFFILE};
+			break;
+		case NT_SIGN:
+			syncSet = (int[]){ID, NUM, NOT, OPENPAREN, ENDOFFILE};
+			break;
+	}
 	int index = 0;
 	while(index < count) {
 		if(syncSet[index] == tokType) 
