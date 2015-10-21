@@ -60,6 +60,17 @@
 #define ENDSTATE 100
 #define RESERVED 0
 #define LEXERR 99
+//nonterminals
+#define NT_PROGRAM
+#define NT_IDLST
+#define NT_DECLS
+#define NT_TYPE
+#define NT_STDTYPE
+#define NT_SUBPRGDECLS 
+#define NT_SUBPRGDECL
+#define NT_SUBPRGHEAD
+#define NT_PARAMLST
+#define NT_CPDSTMT
 
 extern void loadFiles(char* src);
 extern struct token *getNextToken();
