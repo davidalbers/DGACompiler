@@ -1,4 +1,4 @@
-program testProg (a);
+program : testProg (a);
 var a : integer;
 var b : real;
 var d : array[0 .. 3] of integer;
