@@ -578,6 +578,7 @@ void factorPrime() {
 }
 
 void sign() {
+	int syncSet[] = {ID, NUM, NOT, OPENPAREN};
 	switch(tok->attribute->attrInt) {
 		case ADD:
 			match(ADD);
@@ -588,7 +589,9 @@ void sign() {
 			puts("SUBTRACT");
 			break;
 		default:
-			//error
+			printf("synerr sign");
+			while(!synch(tok,syncSet,4))
+				tok = getNextToken();
 			break;
 	}
 }
@@ -616,6 +619,25 @@ void match(int type) {
 		else if(type != tok->attribute->attrInt)
 			printf("synerr tok type is %d and type to match is %d, attr name is %s\n", tok->attribute->attrInt, type, attributeToString(type));
 	}
+}
+
+int synch(struct token * tok, int syncSet[]	, int count) {
+	int tokType = 0;
+	
+	if(tok->tokenName == ID || tok->tokenName == NUM || tok->tokenName == ASSIGNOP || tok->tokenName == OPENPAREN || tok->tokenName == CLOSEPAREN ||
+		tok->tokenName == COMMA || tok->tokenName == SEMICOLON || tok->tokenName == COLON || tok->tokenName == PERIOD || tok->tokenName == ARRAYRANGE || 
+		tok->tokenName == ENDOFFILE || tok->tokenName == RELOP || tok->tokenName == ADDOP || tok->tokenName == MULOP || tok->tokenName == OPENBRACKET || tok->tokenName == CLOSEBRACKET) {
+		tokType = tok->tokenName;
+	}
+	else
+		tokType = tok->attribute->attrInt;
+	int index = 0;
+	while(index < count) {
+		if(syncSet[index] == tokType) 
+			return 1;
+		index++;
+	}
+	return 0;
 }
 
 void finish() {
