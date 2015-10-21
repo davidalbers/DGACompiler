@@ -61,16 +61,27 @@
 #define RESERVED 0
 #define LEXERR 99
 //nonterminals
-#define NT_PROGRAM
-#define NT_IDLST
-#define NT_DECLS
-#define NT_TYPE
-#define NT_STDTYPE
-#define NT_SUBPRGDECLS 
-#define NT_SUBPRGDECL
-#define NT_SUBPRGHEAD
-#define NT_PARAMLST
-#define NT_CPDSTMT
+#define NT_PROGRAM 0
+#define NT_IDLST 1
+#define NT_DECLS 2
+#define NT_TYPE 3
+#define NT_STDTYPE 4
+#define NT_SUBPRGDECLS 5 
+#define NT_SUBPRGDECL 6
+#define NT_SUBPRGHEAD 7
+#define NT_PARAMLST 8
+#define NT_CPDSTMT 9
+#define NT_ARGS 10
+#define NT_OPTSTMTS 12
+#define NT_STMTLST 13
+#define NT_STMT 14
+#define NT_VAR 15
+#define NT_EXPLST 16
+#define NT_EXPR 17
+#define NT_SIMEXP 18
+#define NT_TERM 19
+#define NT_FACTOR 20
+#define NT_SIGN 21
 
 extern void loadFiles(char* src);
 extern struct token *getNextToken();
