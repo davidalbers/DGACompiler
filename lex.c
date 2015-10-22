@@ -153,7 +153,7 @@ void loadReservedWords(char *pathToReservedWords) {
 struct token *getNextToken(FILE * listingFile) {
 	fsa.state = 0;
 	if(fsa.f == 0 && tokenizingLine == 0)
-		fprintf(listingFile, "%s", fileLineByLine[tokenizingLine]); //print first line
+		fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );//print first line
 	if(fsa.f >= MAX_LINE_LENGTH) {
 		fsa.f = 0;
 		tokenizingLine++;
@@ -164,7 +164,7 @@ struct token *getNextToken(FILE * listingFile) {
 			eofToken->tokenName = ENDOFFILE;
 			return eofToken;
 		}
-		fprintf(listingFile, "%s", fileLineByLine[tokenizingLine]);
+		fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
 	}
 	int foundToken = 0;
 	while(!foundToken) {
@@ -203,7 +203,8 @@ struct token *getNextToken(FILE * listingFile) {
 						eofToken->tokenName = ENDOFFILE;
 						return eofToken;
 					}
-					fprintf(listingFile, "%s", fileLineByLine[tokenizingLine]);
+					fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
+			
 				}
 				break;
 			case 16:

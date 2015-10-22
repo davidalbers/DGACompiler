@@ -691,7 +691,7 @@ int match(int type) {
 			return 1;
 		}
 		else if(type != tok->tokenName) {
-			printMatchSynerr(tokenNameToString(tok->tokenName));
+			printMatchSynerr(tokenNameToString(type));
 			//fprintf("synerr tok type is %d and type to match is %d, type name is %s \n", tok->tokenName, type, tokenNameToString(type));
 			return 0;
 		}
@@ -707,7 +707,7 @@ int match(int type) {
 			return 1;
 		}
 		else if(type != tok->attribute->attrInt) {
-			printMatchSynerr(attributeToString(tok->attribute->attrInt));
+			printMatchSynerr(attributeToString(type));
 			//printf("synerr tok type is %d and type to match is %d, attr name is %s\n", tok->attribute->attrInt, type, attributeToString(type));
 			return 0;
 		}
