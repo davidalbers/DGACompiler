@@ -48,13 +48,23 @@ void factorPrime();
 void sign();
 int synch(struct token * tok, int syncingType);
 void synchType(int syncingType);
+void printSynerr(char * neededTypes, char * nonterminal);
+void printMatchSynerr(char * matchType);
+
+FILE * listingFile;
+extern int errno;
 
 int main(int argc, char *argv[]) 
 {
 	if(argc == 2) 
 	{
-		loadFiles(argv[1]);
-		parse();
+		listingFile = fopen("listing.txt", "w");
+		if(listingFile != NULL) {
+			loadFiles(argv[1]);
+			parse();
+		}
+		else
+			perror("Could not open listing file!");
 	}
 	else
 	{
@@ -65,7 +75,7 @@ int main(int argc, char *argv[])
 }
 
 void parse() {
-	tok = getNextToken();
+	tok = getNextToken(listingFile);
 	program();
 	match(ENDOFFILE);
 	//match end of file
@@ -73,7 +83,6 @@ void parse() {
 
 void program() {
 	if(tok->attribute->attrInt == PROGRAM){
-		puts("program {\t");
 		if(!match(PROGRAM)) {synchType(NT_PROGRAM); return;}
 		if(!match(ID)) {synchType(NT_PROGRAM); return;}
 		if(!match(OPENPAREN)) {synchType(NT_PROGRAM); return;}
@@ -81,10 +90,9 @@ void program() {
 		if(!match(CLOSEPAREN)) {synchType(NT_PROGRAM); return;}
 		if(!match(SEMICOLON)) {synchType(NT_PROGRAM); return;}
 		programPrime();
-		puts("\n}");
 	}
 	else {
-		puts("synerr in program expecting id");
+		printSynerr("program", "program");
 		synchType(NT_PROGRAM);
 	}
 }
@@ -106,7 +114,7 @@ void programPrime() {
 			if(!match(PERIOD)) {synchType(NT_PROGRAM); break;}
 			break;
 		default:
-			puts("synerr in program' expecting var, begin, or fun");
+			printSynerr("var, begin, or function", "program'");
 			synchType(NT_PROGRAM);
 	}
 }
@@ -123,7 +131,7 @@ void programPrime2() {
 			if(!match(PERIOD)) {synchType(NT_PROGRAM); break;}
 			break;
 		default:
-			puts("synerr in program'' expecting var, begin, or fun");
+			printSynerr("begin of function", "program''");
 			synchType(NT_PROGRAM);	
 	}
 }
@@ -133,7 +141,7 @@ void idLst() {
 		idLstPrime();
 	}
 	else {
-		puts("synerr in idLst expecting id");
+		printSynerr("id", "id_list");
 		synchType(NT_IDLST);
 	}
 }
@@ -148,7 +156,7 @@ void idLstPrime() {
 		case CLOSEPAREN:
 			break; //epsilon
 		default:
-			puts("synerr in idlst' expecting id or semicolon");
+			printSynerr("comma or close paren", "id_list'");
 			synchType(NT_IDLST);
 	}
 
@@ -165,7 +173,7 @@ void decls() {
 			declsPrime();
 			break;
 		default: 
-			puts("synerr in decls expecting var");
+			printSynerr("var", "declarations");
 			synchType(NT_DECLS);
 	}
 }
@@ -184,7 +192,7 @@ void declsPrime() {
 		case FUNCTION:
 			break; //epsilon
 		default:
-			puts("synerr in program' expecting var, begin, or fun");
+			printSynerr("var, begin, or function", "declarations'");
 			synchType(NT_DECLS);
 	}
 }
@@ -204,9 +212,7 @@ void type() {
 		stdType();
 	}
 	else {
-		puts("synerr in type expecting int or real or array");
-		printf("\nmore %d %d\n",tok->tokenName,tok->attribute->attrInt);
-	
+		printSynerr("intger, real, or array", "type");
 		synchType(NT_TYPE);
 	}
 } 
@@ -219,7 +225,7 @@ void stdType() {
 		if(!match(REAL)) {synchType(NT_STDTYPE); return;}
 	}
 	else {
-		puts("synerr in stdType expecting int or real");	
+		printSynerr("integer or real", "standard_type");
 		synchType(NT_STDTYPE);
 	}
 }
@@ -231,7 +237,7 @@ void subPrgDecls() {
 		subPrgDeclsPrime();
 	}
 	else {
-		puts("synerr in subPrgDecls expecting fun");
+		printSynerr("function", "subprogram_declarations");
 		synchType(NT_SUBPRGDECLS);
 	}
 }
@@ -245,7 +251,7 @@ void subPrgDeclsPrime() {
 	else if(tok->attribute->attrInt == BEGIN)
 		return; //epsilon
 	else {
-		puts("synerr in subPrgDecls' expecting fun or epsilon");
+		printSynerr("function or begin", "subprogram_declarations'");
 		synchType(NT_SUBPRGDECLS);
 	}
 }
@@ -256,7 +262,7 @@ void subPrgDecl() {
 		subPrgDeclPrime();
 	}
 	else {
-		puts("synerr subprgdecl fun");
+		printSynerr("function", "subprogram_declaration");
 		synchType(NT_SUBPRGDECL);
 	}
 }
@@ -274,7 +280,7 @@ void subPrgDeclPrime() {
 		cpdStmt();
 	}
 	else {
-		puts("synerr subprgdecl' var begin fun");
+		printSynerr("var, begin, or function", "subprogram_declaration'");
 		synchType(NT_SUBPRGDECL);
 	}
 }
@@ -288,7 +294,7 @@ void subPrgDeclPrime2() {
 		cpdStmt();
 	}
 	else {
-		puts("synerr subprgdecl''  begin fun");
+		printSynerr("var or function", "subprogram_declaration''");
 		synchType(NT_SUBPRGDECL);
 	}
 }
@@ -300,7 +306,7 @@ void subPrgHead() {
 		subPrgHeadPrime();
 	}
 	else {
-		puts("synerr in subPrgHead expecting fun");
+		printSynerr("function", "subPrgHead");
 		synchType(NT_SUBPRGHEAD);
 	}
 }
@@ -318,7 +324,7 @@ void subPrgHeadPrime() {
 		if(!match(SEMICOLON)) {synchType(NT_SUBPRGHEAD); return;}
 	}
 	else {
-		puts("synerr in subPrgHeadPrime expecting ( or : ");
+		printSynerr("open paren or colon", "subPrgHead'");
 		synchType(NT_SUBPRGHEAD);
 	}
 }
@@ -330,7 +336,7 @@ void args() {
 		if(!match(CLOSEPAREN)) {synchType(NT_ARGS); return;}
 	}
 	else {
-		puts("synerr in args expecting (");
+		printSynerr("open paren", "args");
 		synchType(NT_ARGS);
 	}
 }
@@ -343,7 +349,7 @@ void paramLst() {
 		paramLstPrime();
 	}
 	else {
-		puts("synerr in paramLst expecting ID");
+		printSynerr("id", "param_list");
 		synchType(NT_PARAMLST);
 	}
 }
@@ -359,7 +365,7 @@ void paramLstPrime() {
 	else if(tok->tokenName == CLOSEPAREN) 
 		return; //epsilon
 	else {
-		puts("synerr in paramLst' expecting : or )");
+		printSynerr("semicolon or close paren", "param_list'");
 		synchType(NT_PARAMLST); 
 	}
 }
@@ -370,7 +376,7 @@ void cpdStmt() {
 		cpdStmtPrime();
 	}
 	else {
-		puts("synerr in cpdStmt, begin");
+		printSynerr("begin", "compound_statement");
 		synchType(NT_CPDSTMT);	
 	}
 }
@@ -384,7 +390,7 @@ void cpdStmtPrime() {
 		if(!match(END)) {synchType(NT_CPDSTMT); return;}
 	}
 	else {
-		puts("synerr cpdStmt, id begin, if while, end");
+		printSynerr("id, begin, if, while, or end", "compound_statement'");
 		synchType(NT_CPDSTMT);
 	}
 }
@@ -394,7 +400,7 @@ void optStmts() {
 		stmtLst();
 	}
 	else {
-		puts("synerr optStmt, id begin, if while");
+		printSynerr("id, begin, if, while, or end", "optional_statement");
 		synchType(NT_OPTSTMTS);
 	}
 }
@@ -405,7 +411,7 @@ void stmtLst() {
 		stmtLstPrime();
 	}
 	else {
-		puts("synerr stmtLst, id begin, if while");
+		printSynerr("id, begin, if, while, or end", "statement_list");
 		synchType(NT_STMTLST);
 	}
 }
@@ -419,7 +425,7 @@ void stmtLstPrime() {
 	else if (tok->attribute->attrInt == END) 
 		return;//epsilon
 	else {
-		puts("synerr stmtLstPrime, ; end ");
+		printSynerr("semicolon or end", "statement_list'");
 		synchType(NT_STMTLST);
 	}
 }
@@ -447,7 +453,7 @@ void stmt() {
 		stmt();
 	}
 	else {
-		puts("synerr stmt, id begin, if while");
+		printSynerr("id, begin, if, or while", "statement");
 		synchType(NT_STMT);
 	}
 }
@@ -460,7 +466,7 @@ void stmtPrime() {
 		stmt();
 	}
 	else {
-		puts("synerr stmtPrime, end else");
+		printSynerr("id, begin, if, or while", "statement'");
 		synchType(NT_STMT);
 	}
 }
@@ -471,7 +477,7 @@ void var() {
 		varPrime();
 	}
 	else{
-		puts("synerr var, ID");
+		printSynerr("id", "variable");
 		synchType(NT_VAR);
 	}
 }
@@ -488,7 +494,7 @@ void varPrime() {
 		return;//epsilon
 	}
 	else {
-		puts("synerr var', id [ :=");
+		printSynerr("id, open bracket, or assign op", "variable'");
 		synchType(NT_VAR);
 	}
 }
@@ -501,7 +507,7 @@ void expLst() {
 		expLstPrime();
 	}
 	else {
-		puts("synerr expLst ( id num + - NOT");
+		printSynerr("open paren, id, num, plus, minus, not", "expression_list");
 		synchType(NT_EXPLST);
 	}
 }
@@ -516,7 +522,7 @@ void expLstPrime() {
 		return; //epsilon
 	}
 	else {
-		puts("synerr explst' , )");
+		printSynerr("comma, close paren", "expression_list");
 		synchType(NT_EXPLST);
 	}
 }
@@ -528,7 +534,7 @@ void expr() {
 		exprPrime();
 	}
 	else {
-		puts("synerr exp ( id num + - not");
+		printSynerr("open paren, id, num, plus, minus, not", "expression");
 		synchType(NT_EXPR);
 	}
 }
@@ -544,7 +550,7 @@ void exprPrime() {
 		simExp();
 	}
 	else {
-		puts("synerr exprPrime");
+		printSynerr("relop, close paren, semicolon, end, CLOSEBRACKET, then, do, comma, else", "expression");
 		synchType(NT_EXPR);
 	}
 }
@@ -561,7 +567,7 @@ void simExp() {
 		simExpPrime();
 	}
 	else {
-		puts("synerr exp ( id num + - not");
+		printSynerr("open paren, id, num, plus, minus, not", "simple_expression");
 		synchType(NT_SIMEXP);
 	}
 }
@@ -577,7 +583,7 @@ void simExpPrime() {
 		simExpPrime();
 	}
 	else {
-		puts("synerr simexp' ) end ] then do relop");
+		printSynerr("addop, open paren, id, num, plus, minus, not", "simple_expression'");
 		synchType(NT_SIMEXP);
 	}
 }
@@ -588,7 +594,7 @@ void term() {
 		termPrime();
 	}
 	else {
-		puts("synerr term ( id num not");
+		printSynerr("open paren, id, num, not", "term");
 		synchType(NT_TERM);
 	}
 }
@@ -605,7 +611,7 @@ void termPrime() {
 		term();
 	}
 	else {
-		puts("synerr term' ) end ] then do addop mulop");
+		printSynerr("mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end", "term'");
 		synchType(NT_TERM);
 	}
 }
@@ -628,7 +634,7 @@ void factor() {
 		factor();
 	}
 	else {
-		puts("synerr factor ( id num not");
+		printSynerr("open paren, id, num, not", "factor");
 		synchType(NT_FACTOR);
 	}
 }
@@ -650,7 +656,7 @@ void factorPrime() {
 		return;//epsilon
 	}
 	else {
-		puts("synerr factor' ( [ ) end ] then do addop mulop");
+		printSynerr("open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop", "factor'");
 		synchType(NT_FACTOR);
 	}
 }
@@ -666,7 +672,7 @@ void sign() {
 	
 			break;
 		default:
-			printf("synerr sign");
+			printSynerr("plus or minus", "sign");
 			synchType(NT_SIGN);
 	}
 }
@@ -676,8 +682,8 @@ int match(int type) {
 		type == COMMA || type == SEMICOLON || type == COLON || type == PERIOD || type == ARRAYRANGE || 
 		type == ENDOFFILE || type == RELOP || type == ADDOP || type == MULOP || type == OPENBRACKET || type == CLOSEBRACKET) {
 		if(type == tok->tokenName && type != ENDOFFILE) {
-			printf("%s, ", tokenNameToString(type));
-			tok = getNextToken();
+			//printf("%s, ", tokenNameToString(type));
+			tok = getNextToken(listingFile);
 			return 1;
 		}
 		else if (type == tok->tokenName && type == ENDOFFILE) {
@@ -685,14 +691,15 @@ int match(int type) {
 			return 1;
 		}
 		else if(type != tok->tokenName) {
-			printf("synerr tok type is %d and type to match is %d, type name is %s \n", tok->tokenName, type, tokenNameToString(type));
+			printMatchSynerr(tokenNameToString(tok->tokenName));
+			//fprintf("synerr tok type is %d and type to match is %d, type name is %s \n", tok->tokenName, type, tokenNameToString(type));
 			return 0;
 		}
 	}
 	else {
 		if(type == tok->attribute->attrInt && type != ENDOFFILE) {
-			printf("%s, ", attributeToString(type));
-			tok = getNextToken();
+			//printf("%s, ", attributeToString(type));
+			tok = getNextToken(listingFile);
 			return 1;
 		}
 		else if (type == tok->attribute->attrInt && type == ENDOFFILE) {
@@ -700,7 +707,8 @@ int match(int type) {
 			return 1;
 		}
 		else if(type != tok->attribute->attrInt) {
-			printf("synerr tok type is %d and type to match is %d, attr name is %s\n", tok->attribute->attrInt, type, attributeToString(type));
+			printMatchSynerr(attributeToString(tok->attribute->attrInt));
+			//printf("synerr tok type is %d and type to match is %d, attr name is %s\n", tok->attribute->attrInt, type, attributeToString(type));
 			return 0;
 		}
 	}
@@ -709,7 +717,7 @@ int match(int type) {
 void synchType(int syncingType) {
 	while(!synch(tok,syncingType)) {
 		//printf("syncing %d", tok->tokenName);
-		tok = getNextToken();
+		tok = getNextToken(listingFile);
 	}	
 }
 
@@ -817,6 +825,35 @@ int synch(struct token * tok, int syncingType) {
 		index++;
 	}
 	return 0;
+}
+void printMatchSynerr(char * matchType) {
+	if(tok->tokenName == LEXERR)
+		return;//don't print lexerrs here
+	char * tokStr;
+	if(tok->tokenName == ID || tok->tokenName == NUM || tok->tokenName == ASSIGNOP || tok->tokenName == OPENPAREN || tok->tokenName == CLOSEPAREN ||
+		tok->tokenName == COMMA || tok->tokenName == SEMICOLON || tok->tokenName == COLON || tok->tokenName == PERIOD || tok->tokenName == ARRAYRANGE || 
+		tok->tokenName == ENDOFFILE || tok->tokenName == RELOP || tok->tokenName == ADDOP || tok->tokenName == MULOP || tok->tokenName == OPENBRACKET || tok->tokenName == CLOSEBRACKET) {
+		tokStr = tokenNameToString(tok->tokenName);
+	}
+	else {
+		tokStr = attributeToString(tok->attribute->attrInt);
+	}
+	fprintf(listingFile, "SYNERR expecting %s, received %s\n", matchType, tokStr);
+}
+
+void printSynerr(char * neededTypes, char * nonterminal) {
+	if(tok->tokenName == LEXERR)
+		return;//don't print lexerrs here
+	char * tokStr;
+	if(tok->tokenName == ID || tok->tokenName == NUM || tok->tokenName == ASSIGNOP || tok->tokenName == OPENPAREN || tok->tokenName == CLOSEPAREN ||
+		tok->tokenName == COMMA || tok->tokenName == SEMICOLON || tok->tokenName == COLON || tok->tokenName == PERIOD || tok->tokenName == ARRAYRANGE || 
+		tok->tokenName == ENDOFFILE || tok->tokenName == RELOP || tok->tokenName == ADDOP || tok->tokenName == MULOP || tok->tokenName == OPENBRACKET || tok->tokenName == CLOSEBRACKET) {
+		tokStr = tokenNameToString(tok->tokenName);
+	}
+	else {
+		tokStr = attributeToString(tok->attribute->attrInt);
+	}
+	fprintf(listingFile, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
 }
 
 void finish() {

@@ -36,8 +36,8 @@ struct tokenNode {
 
 extern int errno;
 
-FILE *listingFile;
-FILE *tokenFile;
+
+
 int tokenizingLine = 0;
 int numberLines = 0;
 char** fileLineByLine;
@@ -80,17 +80,8 @@ void sourceToListing(char *sourcePath)
 	FILE *src = fopen(sourcePath, "r"); 
 	if(src != NULL)
 	{
-		listingFile = fopen("listing.txt", "w");
-		tokenFile = fopen("token.txt", "w");
-		if(listingFile != NULL && tokenFile != NULL) 
-		{
-			numberLines = fileLineCount(src);
-			fileLineByLine = readFileLineByLine(src, numberLines);
-		}
-		else 
-		{
-			perror("Could not open listing file!");
-		}
+		numberLines = fileLineCount(src);
+		fileLineByLine = readFileLineByLine(src, numberLines);
 	}
 	else
 	{
@@ -159,9 +150,10 @@ void loadReservedWords(char *pathToReservedWords) {
 	
 //Return 1 at end of line
 //Return 0 if token or error
-struct token *getNextToken() {
+struct token *getNextToken(FILE * listingFile) {
 	fsa.state = 0;
-	
+	if(fsa.f == 0 && tokenizingLine == 0)
+		fprintf(listingFile, "%s", fileLineByLine[tokenizingLine]); //print first line
 	if(fsa.f >= MAX_LINE_LENGTH) {
 		fsa.f = 0;
 		tokenizingLine++;
@@ -172,7 +164,7 @@ struct token *getNextToken() {
 			eofToken->tokenName = ENDOFFILE;
 			return eofToken;
 		}
-
+		fprintf(listingFile, "%s", fileLineByLine[tokenizingLine]);
 	}
 	int foundToken = 0;
 	while(!foundToken) {
@@ -211,6 +203,7 @@ struct token *getNextToken() {
 						eofToken->tokenName = ENDOFFILE;
 						return eofToken;
 					}
+					fprintf(listingFile, "%s", fileLineByLine[tokenizingLine]);
 				}
 				break;
 			case 16:
@@ -252,6 +245,8 @@ struct token *getNextToken() {
 				strncpy(lexeme, fileLineByLine[tokenizingLine]+fsa.b, (fsa.f-fsa.b));
 				
 				fsa.b = fsa.f;
+				if(fsa.currToken->tokenName == LEXERR)
+					fprintf(listingFile, "LEXERR:\t%s:\t'%s'\n", attributeToString(fsa.currToken->attribute->attrInt), lexeme);		
 				return fsa.currToken; //return token
 			default:
 				fsa.f = fsa.b; 

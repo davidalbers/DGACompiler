@@ -84,7 +84,7 @@
 #define NT_SIGN 21
 
 extern void loadFiles(char* src);
-extern struct token *getNextToken();
+extern struct token *getNextToken(FILE * listingFile);
 extern char *tokenNameToString(int);
 extern char *attributeToString(int);
 #ifndef LEX_H

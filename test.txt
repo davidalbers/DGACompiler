@@ -3,7 +3,7 @@ var a : integer;
 var b : real;
 var d : array[0 .. 3] of integer;
 function testSub ( p : integer ): integer ;
-	function innerSub( p2 : real) : integer ;
+	function : innerSub( p2 : real) : integer ;
 		begin
 		end;
 	begin

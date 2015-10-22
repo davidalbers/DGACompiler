@@ -1,0 +1,93 @@
+LINE	TOKEN-TYPE  	ATTRIBUTE                	LEXEME
+1:		0 Reserved  	24        	program        	program
+1:		30 Id        	322983392 	ptr to sym tab 	testProg
+1:		36 open paren	null                     	(
+1:		30 Id        	322983680 	ptr to sym tab 	a
+1:		37 close paren	null                     	)
+1:		39 semicolon 	null                     	;
+2:		0 Reserved  	25        	var            	var
+2:		30 Id        	322983680 	ptr to sym tab 	a
+2:		40 colon     	null                     	:
+2:		0 Reserved  	26        	integer        	integer
+2:		39 semicolon 	null                     	;
+3:		0 Reserved  	25        	var            	var
+3:		30 Id        	322985040 	ptr to sym tab 	b
+3:		40 colon     	null                     	:
+3:		0 Reserved  	40        	unknown        	real
+3:		39 semicolon 	null                     	;
+4:		0 Reserved  	25        	var            	var
+4:		30 Id        	322985760 	ptr to sym tab 	d
+4:		40 colon     	null                     	:
+4:		0 Reserved  	34        	unknown        	array
+4:		99 lexerr    	23        	Unrecog Symbol 	[
+4:		31 num       	0         	int string form	0
+4:		42 arr range 	null                     	..
+4:		31 num       	3         	int string form	3
+4:		99 lexerr    	23        	Unrecog Symbol 	]
+4:		0 Reserved  	35        	unknown        	of
+4:		0 Reserved  	26        	integer        	integer
+4:		39 semicolon 	null                     	;
+5:		0 Reserved  	27        	function       	function
+5:		30 Id        	322987616 	ptr to sym tab 	testSub
+5:		36 open paren	null                     	(
+5:		30 Id        	322987904 	ptr to sym tab 	p
+5:		40 colon     	null                     	:
+5:		0 Reserved  	26        	integer        	integer
+5:		37 close paren	null                     	)
+5:		40 colon     	null                     	:
+5:		0 Reserved  	26        	integer        	integer
+5:		39 semicolon 	null                     	;
+6:		0 Reserved  	27        	function       	function
+6:		30 Id        	322989040 	ptr to sym tab 	innerSub
+6:		36 open paren	null                     	(
+6:		30 Id        	322989328 	ptr to sym tab 	p2
+6:		40 colon     	null                     	:
+6:		0 Reserved  	40        	unknown        	real
+6:		37 close paren	null                     	)
+6:		40 colon     	null                     	:
+6:		0 Reserved  	26        	integer        	integer
+6:		39 semicolon 	null                     	;
+7:		0 Reserved  	28        	begin          	begin
+8:		0 Reserved  	29        	end            	end
+8:		39 semicolon 	null                     	;
+9:		0 Reserved  	28        	begin          	begin
+10:		0 Reserved  	29        	end            	end
+10:		39 semicolon 	null                     	;
+11:		0 Reserved  	28        	begin          	begin
+12:		0 Reserved  	31        	if             	if
+12:		36 open paren	null                     	(
+12:		33 addop     	16        	-              	-
+12:		31 num       	1         	int string form	1
+12:		32 relop     	12        	>              	>
+12:		30 Id        	322983680 	ptr to sym tab 	a
+12:		33 addop     	15        	+              	+
+12:		31 num       	1         	int string form	1
+12:		37 close paren	null                     	)
+12:		0 Reserved  	30        	then           	then
+13:		30 Id        	322983680 	ptr to sym tab 	a
+13:		35 assignop  	null                     	:=
+13:		36 open paren	null                     	(
+13:		0 Reserved  	37        	unknown        	not
+13:		30 Id        	322983680 	ptr to sym tab 	a
+13:		37 close paren	null                     	)
+14:		0 Reserved  	32        	else           	else
+15:		30 Id        	322985040 	ptr to sym tab 	b
+15:		99 lexerr    	23        	Unrecog Symbol 	[
+15:		31 num       	1         	int string form	1
+15:		99 lexerr    	23        	Unrecog Symbol 	]
+15:		35 assignop  	null                     	:=
+15:		30 Id        	322983680 	ptr to sym tab 	a
+15:		99 lexerr    	23        	Unrecog Symbol 	[
+15:		31 num       	2         	int string form	2
+15:		99 lexerr    	23        	Unrecog Symbol 	]
+15:		39 semicolon 	null                     	;
+16:		0 Reserved  	36        	unknown        	while
+16:		36 open paren	null                     	(
+16:		31 num       	0         	int string form	0
+16:		37 close paren	null                     	)
+16:		0 Reserved  	38        	unknown        	do
+17:		0 Reserved  	28        	begin          	begin
+18:		0 Reserved  	29        	end            	end
+19:		0 Reserved  	29        	end            	end
+19:		41 period    	null                     	.
+20:		43 end of file	null                     
