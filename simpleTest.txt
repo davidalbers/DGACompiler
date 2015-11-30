@@ -1,0 +1,4 @@
+program testProg (a);
+begin
+	a := 7
+end .

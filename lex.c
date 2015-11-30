@@ -16,10 +16,7 @@ struct FSA {
 	struct token *currToken;
 } fsa;
 
-struct node {
-	char *id;
-	struct node *next;
-} *symbolTableRoot;
+
 
 struct resWordNode{
 	char *id;
@@ -507,6 +504,7 @@ void realMachine(char *line) {
 					else {
 						char *num = malloc(sizeof(char) * 11);
 						numToken->tokenName = NUM;
+						numToken->subName = REAL;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
@@ -669,6 +667,7 @@ void longRealMachine(char *line) {
 					}
 					else {
 						numToken->tokenName = NUM;
+						numToken->subName = REAL;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
@@ -716,6 +715,7 @@ void longRealMachine(char *line) {
 					}
 					else {
 						numToken->tokenName = NUM;
+						numToken->subName = REAL;
 						strcpy(num,d);
 						strcat(num,".");
 						strcat(num,yy);
@@ -903,6 +903,7 @@ void intMachine(char *line) {
 				}
 				else {
 					intToken->tokenName = NUM;
+					intToken->subName = INTEGER;
 					attr->attrString = num;
 				}
 				intToken->attribute = attr;
@@ -1136,6 +1137,21 @@ struct node *addToSymbolTable(char* id) {
 		return newNode;
 	}
 	
+}
+
+struct node *getSymbol(char* id) {
+	if(symbolTableRoot != NULL) {
+		struct node *currNode = symbolTableRoot;
+		if(!strcmp(id,symbolTableRoot->id)) {
+			return symbolTableRoot;
+		}
+		while(currNode->next != 0) {
+			currNode = currNode->next;
+			if(!strcmp(id,currNode->id)) {
+				return currNode; //found id in table, don't add
+			}
+		}
+	}
 }
 
 char *tokenNameToString(int tokenName) {

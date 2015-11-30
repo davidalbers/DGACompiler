@@ -14,8 +14,8 @@ void idLst();
 void idLstPrime();
 void decls();
 void declsPrime();
-void type();
-void stdType();
+struct typeReturn *type();
+struct typeReturn *stdType();
 void subPrgDecls();
 void subPrgDeclsPrime();
 void subPrgDecl();
@@ -33,18 +33,20 @@ void stmtLst();
 void stmtLstPrime();
 void stmt();
 void stmtPrime();
-void var();
-void varPrime();
+struct varReturn *var();
+struct typeReturn *varPrime();
 void expLst();
 void expLstPrime();
-void expr();
-void exprPrime();
-void simExp();
-void simExpPrime();
-void term();
+struct typeReturn *expr();
+struct typeReturn *exprPrime(int type);
+struct typeReturn *simExp();
+struct typeReturn *simExpPrime(int type);
+struct typeReturn *term();
 void termPrime();
-void factor();
-void factorPrime();
+struct typeReturn *factor();
+struct typeReturn *matchNum(int nt);
+struct typeReturn *matchId(int nt);
+struct typeReturn *factorPrime(int type);
 void sign();
 int synch(struct token * tok, int syncingType);
 void synchType(int syncingType);
@@ -166,9 +168,13 @@ void decls() {
 	switch(tok->attribute->attrInt) {
 		case VAR:
 			if(!match(VAR)) {synchType(NT_DECLS); break;}
+			char* lexeme = NULL;
+			if(tok->tokenName == ID)
+				lexeme = tok->attribute->attrString;
 			if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
-			type();
+			struct typeReturn *tType = type();
+			//todo lexeme.type = type
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
 			declsPrime();
 			break;
@@ -182,9 +188,13 @@ void declsPrime() {
 	switch(tok->attribute->attrInt) {
 		case VAR:
 			if(!match(VAR)) {synchType(NT_DECLS); break;}
+			char* lexeme = NULL;
+			if(tok->tokenName == ID)
+				lexeme = tok->attribute->attrString;
 			if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
 			type();
+			//todo lexeme.type = type
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
 			declsPrime();
 			break;
@@ -197,9 +207,9 @@ void declsPrime() {
 	}
 }
 
-void type() {
+struct typeReturn *type() {
 	if(tok->attribute->attrInt == INTEGER || tok->attribute->attrInt == REAL) {
-		stdType();
+		return stdType();
 	}
 	else if(tok->attribute->attrInt == ARRAY) {
 		if(!match(ARRAY)) {synchType(NT_TYPE); return;}
@@ -209,24 +219,56 @@ void type() {
 		if(!match(NUM)) {synchType(NT_TYPE); return;}
 		if(!match(CLOSEBRACKET)) {synchType(NT_TYPE); return;}
 		if(!match(OF)) {synchType(NT_TYPE); return;}
-		stdType();
+		struct typeReturn *sType = stdType();
+		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+		if(sType->type == INT_TYPE) {
+			ret->type = ARRAY_INT_TYPE;
+			return ret;
+		}
+		else if(sType->type == REAL_TYPE) {
+			ret->type = ARRAY_REAL_TYPE;
+			return ret;
+		}
+		else {
+			ret->encounteredError = 1;
+			return ret;
+		}
 	}
 	else {
 		printSynerr("intger, real, or array", "type");
 		synchType(NT_TYPE);
+
+		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+		ret->encounteredError = 1;
+		return ret;
 	}
 } 
 
-void stdType() {
+struct typeReturn *stdType() {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
 	if(tok->attribute->attrInt == INTEGER) {
-		if(!match(INTEGER)) {synchType(NT_STDTYPE); return;}
+		if(!match(INTEGER)) {
+			synchType(NT_STDTYPE); 
+			ret->encounteredError = 1;
+			return ret;
+		}
+		ret->type = INT_TYPE;
+		return ret;
 	}
 	else if(tok->attribute->attrInt == REAL) {
-		if(!match(REAL)) {synchType(NT_STDTYPE); return;}
+		if(!match(REAL)) {
+			synchType(NT_STDTYPE); 
+			ret->encounteredError = 1;
+			return ret;
+		}
+		ret->type = REAL_TYPE;
+		return ret;
 	}
 	else {
 		printSynerr("integer or real", "standard_type");
 		synchType(NT_STDTYPE);
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
@@ -343,9 +385,11 @@ void args() {
 
 void paramLst() {
 	if(tok->tokenName == ID) {
+		char *lexeme = tok->attribute->attrString;
 		if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
-		type();
+		struct typeReturn *tType = type();
+		//todo lexeme.type = type, fp_type
 		paramLstPrime();
 	}
 	else {
@@ -357,9 +401,11 @@ void paramLst() {
 void paramLstPrime() {
 	if(tok->tokenName == SEMICOLON) {
 		if(!match(SEMICOLON)) {synchType(NT_PARAMLST); return;}
+		char *lexeme = tok->attribute->attrString;
 		if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
-		type();
+		struct typeReturn *tType = type();
+		//todo lexeme.type = type, fp_type
 		paramLstPrime();
 	}
 	else if(tok->tokenName == CLOSEPAREN) 
@@ -432,23 +478,41 @@ void stmtLstPrime() {
 
 void stmt() {
 	if(tok->tokenName == ID) {
-		var();
+		struct varReturn *vType = var();
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
-		expr();
+		struct typeReturn *eType = expr();
+		if(eType->encounteredError == 0 && vType->encounteredError == 0) {
+			if(vType->type == ARRAY_TYPE && (eType->type == ARRAY_INT_TYPE || eType->type == ARRAY_REAL_TYPE)) {
+				//todo create var with type
+			}
+			else {
+				//todo err
+			}
+		}
+		else {
+			//todo err
+		}
+
 	} 
 	else if(tok->attribute->attrInt == BEGIN) {
 		cpdStmt();
 	} 
 	else if( tok->attribute->attrInt == IF) {
 		if(!match(IF)) {synchType(NT_STMT); return;}
-		expr();
+		struct typeReturn *eType = expr();
+		if(eType->type != BOOL_TYPE) {
+			//todo err
+		}
 		if(!match(THEN)) {synchType(NT_STMT); return;}
 		stmt();
 		stmtPrime();
 	} 
 	else if( tok->attribute->attrInt == WHILE) {
 		if(!match(WHILE)) {synchType(NT_STMT); return;}
-		expr();
+		struct typeReturn *eType = expr();
+		if(eType->type != BOOL_TYPE) {
+			//todo err
+		}
 		if(!match(DO)) {synchType(NT_STMT); return;}
 		stmt();
 	}
@@ -471,31 +535,47 @@ void stmtPrime() {
 	}
 }
 
-void var() {
+struct varReturn *var() {
 	if(tok->tokenName == ID) {
+		char* lexeme = tok->attribute->attrString;
 		if(!match(ID)) {synchType(NT_VAR); return;}
-		varPrime();
+		struct typeReturn *vType = varPrime();
+		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
+		ret->type = vType->type;
+		ret->lexeme = lexeme;
+		return ret;
 	}
 	else{
 		printSynerr("id", "variable");
 		synchType(NT_VAR);
+		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void varPrime() {
-	if(tok->tokenName == ID) 
-		return;//epsilon
+struct typeReturn *varPrime() {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+	if(tok->tokenName == ID) {
+		ret->type = ANY_TYPE;
+		return ret;//epsilon
+	}
 	else if(tok->tokenName == OPENBRACKET) {
 		if(!match(OPENBRACKET)) {synchType(NT_VAR); return;}
 		expr();
 		if(!match(CLOSEBRACKET)) {synchType(NT_VAR); return;}
+		ret->type = ARRAY_TYPE;
+		return ret;//epsilon
 	}
 	else if(tok->tokenName == ASSIGNOP) {
-		return;//epsilon
+		ret->type = ANY_TYPE;
+		return ret;//epsilon
 	}
 	else {
 		printSynerr("id, open bracket, or assign op", "variable'");
 		synchType(NT_VAR);
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
@@ -527,137 +607,295 @@ void expLstPrime() {
 	}
 }
 
-void expr() {
+struct typeReturn *expr() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM ||
 		tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT || tok->attribute->attrInt == NOT) {
-		simExp();
-		exprPrime();
+		struct typeReturn *sType = simExp();
+		return exprPrime(sType->type);
 	}
 	else {
 		printSynerr("open paren, id, num, plus, minus, not", "expression");
 		synchType(NT_EXPR);
+		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void exprPrime() { 
+struct typeReturn *exprPrime(int type) { 
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == SEMICOLON || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 	 tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == COMMA || 
 	 tok->attribute->attrInt == ELSE ) {
-		return;//epsilon
+	 	ret->type = type;
+		return ret;//epsilon
 	}
 	else if(tok->tokenName == RELOP) {
-		if(!match(RELOP)) {synchType(NT_EXPR); return;}
-		simExp();
+		if(type != INT_TYPE && type != REAL_TYPE) {
+			ret->encounteredError = 1;
+			return ret;
+		}
+		if(!match(RELOP)) {
+			synchType(NT_EXPR); 
+			ret->encounteredError = 1;
+			return ret;
+		}
+		struct typeReturn *sType = simExp();
+		if(sType->type != INT_TYPE && sType->type != REAL_TYPE) {
+			ret->encounteredError = 1;
+			return ret;
+		}
+		ret->type = BOOL_TYPE;
+		return ret;
 	}
 	else {
 		printSynerr("relop, close paren, semicolon, end, CLOSEBRACKET, then, do, comma, else", "expression");
 		synchType(NT_EXPR);
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void simExp() {
-
+struct typeReturn *simExp() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM || tok->attribute->attrInt == NOT) {
-		term();
-		simExpPrime();
+		struct typeReturn *tType = term();
+		return simExpPrime(tType->type);
 	}
 	else if(tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT) {
 		sign();
-		term();
-		simExpPrime();
+		struct typeReturn *sType = term();
+		if(sType->type == INT_TYPE || sType->type == REAL_TYPE) {
+			return simExpPrime(sType->type);
+		}
+		else {
+			struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+			ret->encounteredError = 1;
+			return ret;
+		}
 	}
 	else {
 		printSynerr("open paren, id, num, plus, minus, not", "simple_expression");
 		synchType(NT_SIMEXP);
+
+		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void simExpPrime() {
+struct typeReturn *simExpPrime(int type) {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == SEMICOLON || tok->tokenName == RELOP || tok->tokenName == CLOSEBRACKET || tok->tokenName == COMMA || tok->attribute->attrInt == END ||
 	  tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->attribute->attrInt == ELSE ) {
-		return;//epsilon
+		ret->type = type;
+		return ret;//epsilon
 	}
 	else if(tok->tokenName == ADDOP) {
-		if(!match(ADDOP)) {synchType(NT_SIMEXP); return;}
-		term();
-		simExpPrime();
+		int addOp = tok->attribute->attrInt;
+		if(!match(ADDOP)) {
+			synchType(NT_SIMEXP);
+			ret->encounteredError = 1;
+			return ret;
+		}
+		struct typeReturn *sType = term();
+		//make sure only nums are being added or subtracted
+		if(addop == ADD || addop == SUBTRACT)
+			if(!(type == INT_TYPE || type == REAL_TYPE) || 
+				!(sType->type == INT_TYPE || sType->type == REAL_TYPE))  {
+				ret->encounteredError = 1;
+				return ret;
+			}
+		}
+		//make sure only bools are being OR'd
+		if(addop == OR) {
+			if(type != BOOL_TYPE || sType->type != BOOL_TYPE) {
+				ret->encounteredError = 1;
+				return ret;
+			}
+		}
+		return simExpPrime(sType->type);
 	}
 	else {
 		printSynerr("addop, open paren, id, num, plus, minus, not", "simple_expression'");
 		synchType(NT_SIMEXP);
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void term() {
+struct typeReturn *term() {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM || tok->attribute->attrInt == NOT) {
-		factor();
-		termPrime();
+		struct typeReturn *tval = factor();
+		return termPrime(tval->val);
 	}
 	else {
 		printSynerr("open paren, id, num, not", "term");
 		synchType(NT_TERM);
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void termPrime() {
+struct typeReturn *termPrime(int termPIn) {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == RELOP || tok->tokenName == SEMICOLON || tok->tokenName == CLOSEBRACKET || 
 			tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
 			 tok->tokenName == COMMA || tok->attribute->attrInt == ELSE ||tok->attribute->attrInt == END ) {
-		return;//epsilon
+		ret->val = termPIn;
+		return ret;//epsilon
 	}
 	else if(tok->tokenName == MULOP) {
-		if(!match(MULOP)) {synchType(NT_TERM); return;}
-		factor();
-		term();
+		int mulop = tok->attribute->attrInt;
+		if(!match(MULOP)) {
+			synchType(NT_TERM); 
+			ret->encounteredError = 1;
+			return ret;
+		}
+		struct typeReturn *fType = factor(termPIn);
+		int generatedType = -1;
+		if(mulop == MULTIPLY || mulop == DIVIDE) {
+			if(!(termPIn == INT_TYPE || termPIn == REAL_TYPE) || 
+				!(fType->type == INT_TYPE || fType->type == REAL_TYPE)) {
+				ret->encounteredError = 1;
+				return ret;
+			}
+			else 
+				generatedType = REAL_TYPE;
+		}
+		if(mulop == DIV || mulop == MOD) {
+			if(termPIn != INT_TYPE || fType->type != INT_TYPE) {
+				ret->encounteredError = 1;
+				return ret;
+			}
+			else 
+				generatedType = INT_TYPE;
+		}
+		if(mulop == AND) {
+			if(termPrime != BOOL_TYPE || fType-> != BOOL_TYPE) {
+				ret->encounteredError = 1;
+				return ret;
+			}
+			else
+				generatedType = BOOL_TYPE;
+		}
+		return termPrime(generatedType);
 	}
 	else {
 		printSynerr("mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end", "term'");
 		synchType(NT_TERM);
+		ret->encounteredError = 1;
+		return ret;
 	}
 }
 
-void factor() {
+struct typeReturn *factor() {
+	struct typeReturn *fail = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+	fail->encounteredError = 1;
 	if(tok->tokenName == OPENPAREN) {
-		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return;}
-		expr();
-		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return;}
+		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return fail;}
+		struct typeReturn *fval = expr();
+		if(fval->encounteredError == 1)
+			return fail;
+		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return fail;}
+		return fval;
 	}
 	else if(tok->tokenName == ID) {
-		if(!match(ID)) {synchType(NT_FACTOR); return;}
-		factorPrime();
+		struct typeReturn *idType = matchId(NT_FACTOR);
+		if(idType->encounteredError == 1)
+			return fail;		
+		return factorPrime(idType->type);
 	}
 	else if(tok->tokenName == NUM) {
-		if(!match(NUM)) {synchType(NT_FACTOR); return;}
+		struct typeReturn *fval = matchNum(NT_FACTOR);
+		return fval;
+		
 	}
 	else if(tok->attribute->attrInt == NOT) {
-		if(!match(NOT)) {synchType(NT_FACTOR); return;}
-		factor();
+		if(!match(NOT)) {synchType(NT_FACTOR); return fail;}
+		struct typeReturn *fval = factor();
+		if(fval->type != BOOL_TYPE) {
+			fval->encounteredError = 1;
+		}
+		return fval;
 	}
 	else {
 		printSynerr("open paren, id, num, not", "factor");
 		synchType(NT_FACTOR);
+
 	}
+	return fail;
 }
 
-void factorPrime() {
+struct typeReturn *matchNum(int nt) {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+	if(tok->tokenName == NUM) {
+		ret->val = tok->subName;
+	}
+	else {
+		synchType(nt);
+		ret->encounteredError = 1;
+	}
+	return ret;
+}
+
+struct typeReturn *matchId(int nt) {
+	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+	if(tok->tokenName = ID) {
+		struct node *sym = getSymbol(tok->attribute->attrString);
+		if(sym == NULL) {
+			ret->encounteredError = 1;
+			return ret;
+		}
+		ret->type = node->type;
+	}
+	else {
+		synchType(nt);
+		ret->encounteredError = 1;
+	}
+	return ret;
+}
+
+
+struct typeReturn *factorPrime(int type) {
+	struct typeReturn *fail = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+	fail->encounteredError = 1;
 	if(tok->tokenName == OPENPAREN) {
-		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return;}
-		expr();
-		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return;}
+		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return fail;}
+		struct typeReturn *eType = expr();
+		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return fail;}
+		return eType; //todo what is id(expLst) in pascal?
 	}
 	else if(tok->tokenName == OPENBRACKET) {
-		if(!match(OPENBRACKET)) {synchType(NT_FACTOR); return;}
-		expr();
-		if(!match(CLOSEBRACKET)) {synchType(NT_FACTOR); return;}
+		//factor->id[exp], if exp is an int and id is an array return type stored in array
+		if(!match(OPENBRACKET)) {synchType(NT_FACTOR); return fail;}
+		struct typeReturn *eType = expr();
+		if(!match(CLOSEBRACKET)) {synchType(NT_FACTOR); return fail;}
+		struct typeReturn *fType = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+
+		if(eType->type == INT_TYPE) {
+			if(type == ARRAY_INT_TYPE) 
+				fType->type = INT_TYPE;
+			else if(type == ARRAY_REAL_TYPE)
+				fType->type = REAL_TYPE;
+			else //neither int or real array
+				fType->encounteredError=1;
+		}
+		else //exp is not an int
+			fType->encounteredError=1;
+		return fType;
 	}
 	else if(tok->tokenName == CLOSEPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 		tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
-		 tok->attribute->attrInt == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP) {
-		return;//epsilon
+		tok->attribute->attrInt == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP) {
+		struct typeReturn *fType = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+		fType->type = type;
+		return fType;//epsilon
 	}
 	else {
 		printSynerr("open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop", "factor'");
 		synchType(NT_FACTOR);
+		return fail;
 	}
 }
 

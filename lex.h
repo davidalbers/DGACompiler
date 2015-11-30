@@ -82,11 +82,22 @@
 #define NT_TERM 19
 #define NT_FACTOR 20
 #define NT_SIGN 21
+//types
+#define INT_TYPE = 0
+#define BOOL_TYPE = 1
+#define ARRAY_INT_TYPE = 2
+#define ARRAY_BOOL_TYPE = 3
+//a variable was made in variable production,will be constrained later
+#define ANY_TYPE = 4
+//in variable production, an array was made, will be constrained later
+#define ANY_ARRAY_TYPE = 5 
 
 extern void loadFiles(char* src);
 extern struct token *getNextToken(FILE * listingFile);
 extern char *tokenNameToString(int);
 extern char *attributeToString(int);
+extern struct node *getSymbol(char* id);
+
 #ifndef LEX_H
 #define LEX_H
 
@@ -97,9 +108,26 @@ union Attribute {
 
 struct token {
 	int tokenName;
+	int subName;
 	union Attribute *attribute;
 };
 
 
+struct typeReturn {
+	int encounteredError;
+	int val = -1;
+};
+
+struct varReturn {
+	int encounteredError;
+	int val = -1;
+	char *lexeme;
+};
+
+struct node {
+	char *id;
+	int type;
+	struct node *next;
+} *symbolTableRoot;
 
 #endif
