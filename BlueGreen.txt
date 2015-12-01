@@ -1,0 +1,103 @@
+struct blueNode {
+    int type;
+    char *id;
+    blueNode *next;
+}
+
+struct greenNode {
+    int numParams;
+    char *id;
+    struct blueNode *firstBlue;
+    struct greenNode *prev;
+}
+
+struct greenNode *topGreen;
+
+struct greenNode *popGreenNode() {
+    if(topGreen == null) {
+        return null;
+    }
+    else if(topGreen->prev == null) {
+        topGreen = null;
+        return null;
+    }
+    else {
+        struct greenNode *ret = topGreen;
+        topGreen = topGreen->prev;
+        return ret;
+    }
+}
+
+void pushGreenNode(struct greenNode *newGreen) {
+    if(topGreen == null) 
+        topGreen = newGreen;
+    else {
+        newGreen->prev = topGreen;
+        topGreen = newGreen;
+    }
+}
+
+void checkAddGreenNode(struct greenNode *newGreen) {
+    if(topGreen == null) //no greens? don't need to check
+        pushGreenNode(newGreen);
+    else {
+        struct greenNode *currGreen = topGreen;
+        //check matching green
+        while(currGreen != null) {
+            if(strcmp(currGreen->id, newGreen->id) == 0) {
+                //todo complain
+                return;
+            }
+            
+            struct blueNode *currBlue = currGreen->firstBlue;
+            //check matching blue
+            while(currBlue != null) {
+                if(strcmp(currBlue->id, newGreen->id) == 0) {
+                    //todo complain
+                    return;
+                }
+                currBlue = currBlue->next;
+            }
+            //no matching blue
+            currGreen = currGreen->prev;
+        }
+        //no matching blue or green, good to push on to stack
+        pushGreenNode(newGreen);
+    }
+}
+
+void checkAddBlueNode(struct blueNode *newBlue) {
+
+    //check matching green
+    if(strcmp(topGreen->id, newBlue->id) == 0) {
+        //todo complain
+        return;
+    }
+
+    struct blueNode *currBlue = topGreen->firstBlue;
+    //check matching blue
+    while(currBlue != null) {
+        if(strcmp(currBlue->id, newBlue->id) == 0) {
+            //todo complain
+            return;
+        }
+        currBlue = currBlue->next;
+    }
+
+    //no matching blue or green, good to add to linked list
+   if(topGreen->firstBlue == null) {
+       topGreen->firstBlue = newBlue;
+       return;
+   }
+   struct blueNode *emptyBlue = topGreen->firstBlue;
+   while(emptyBlue->next != null) {
+       emptyBlue = emptyBlue->next;
+   }
+   emptyBlue->next = newBlue;
+}
+/*
+@proghead checkadd greenNode
+@subProgHead checkadd greenNode
+@decl checkadd blueNode
+@subProgHead' popGreenNode
+*/
