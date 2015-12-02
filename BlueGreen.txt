@@ -14,12 +14,12 @@ struct greenNode {
 struct greenNode *topGreen;
 
 struct greenNode *popGreenNode() {
-    if(topGreen == null) {
-        return null;
+    if(topGreen == NULL) {
+        return NULL;
     }
-    else if(topGreen->prev == null) {
-        topGreen = null;
-        return null;
+    else if(topGreen->prev == NULL) {
+        topGreen = NULL;
+        return NULL;
     }
     else {
         struct greenNode *ret = topGreen;
@@ -29,7 +29,7 @@ struct greenNode *popGreenNode() {
 }
 
 void pushGreenNode(struct greenNode *newGreen) {
-    if(topGreen == null) 
+    if(topGreen == NULL) 
         topGreen = newGreen;
     else {
         newGreen->prev = topGreen;
@@ -38,12 +38,12 @@ void pushGreenNode(struct greenNode *newGreen) {
 }
 
 void checkAddGreenNode(struct greenNode *newGreen) {
-    if(topGreen == null) //no greens? don't need to check
+    if(topGreen == NULL) //no greens? don't need to check
         pushGreenNode(newGreen);
     else {
         struct greenNode *currGreen = topGreen;
         //check matching green
-        while(currGreen != null) {
+        while(currGreen != NULL) {
             if(strcmp(currGreen->id, newGreen->id) == 0) {
                 //todo complain
                 return;
@@ -51,7 +51,7 @@ void checkAddGreenNode(struct greenNode *newGreen) {
             
             struct blueNode *currBlue = currGreen->firstBlue;
             //check matching blue
-            while(currBlue != null) {
+            while(currBlue != NULL) {
                 if(strcmp(currBlue->id, newGreen->id) == 0) {
                     //todo complain
                     return;
@@ -76,7 +76,7 @@ void checkAddBlueNode(struct blueNode *newBlue) {
 
     struct blueNode *currBlue = topGreen->firstBlue;
     //check matching blue
-    while(currBlue != null) {
+    while(currBlue != NULL) {
         if(strcmp(currBlue->id, newBlue->id) == 0) {
             //todo complain
             return;
@@ -85,12 +85,12 @@ void checkAddBlueNode(struct blueNode *newBlue) {
     }
 
     //no matching blue or green, good to add to linked list
-   if(topGreen->firstBlue == null) {
+   if(topGreen->firstBlue == NULL) {
        topGreen->firstBlue = newBlue;
        return;
    }
    struct blueNode *emptyBlue = topGreen->firstBlue;
-   while(emptyBlue->next != null) {
+   while(emptyBlue->next != NULL) {
        emptyBlue = emptyBlue->next;
    }
    emptyBlue->next = newBlue;

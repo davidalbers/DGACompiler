@@ -87,7 +87,20 @@ void parse() {
 void program() {
 	if(tok->attribute->attrInt == PROGRAM){
 		if(!match(PROGRAM)) {synchType(NT_PROGRAM); return;}
-		if(!match(ID)) {synchType(NT_PROGRAM); return;}
+		char *lexeme = NULL;
+		if(tok->tokenName == ID) {
+			lexeme = tok->attribute->attrString;
+		}
+		else {
+			synchType(NT_PROGRAM); return;
+		}
+		struct greenNode *newGreen = (struct greenNode *)malloc(sizeof(struct greenNode));
+		newGreen->id = lexeme;
+		int success = checkAddGreenNode(newGreen);
+		if(success == 0) {
+			//todo complain 
+		}
+		//if(!match(ID)) {synchType(NT_PROGRAM); return;}
 		if(!match(OPENPAREN)) {synchType(NT_PROGRAM); return;}
 		idLst();
 		if(!match(CLOSEPAREN)) {synchType(NT_PROGRAM); return;}
@@ -345,7 +358,20 @@ void subPrgDeclPrime2() {
 void subPrgHead() {
 	if(tok->attribute->attrInt == FUNCTION) {
 		if(!match(FUNCTION)) {synchType(NT_SUBPRGHEAD); return;}
-		if(!match(ID)) {synchType(NT_SUBPRGHEAD); return;}
+		char *lexeme = NULL;
+		if(tok->tokenName == ID) {
+			lexeme = tok->attribute->attrString;
+		}
+		else {
+			synchType(NT_PROGRAM); return;
+		}
+		struct greenNode *newGreen = (struct greenNode *)malloc(sizeof(struct greenNode));
+		newGreen->id = lexeme;
+		int success = checkAddGreenNode(newGreen);
+		if(success == 0) {
+			//todo complain 
+		}
+		//if(!match(ID)) {synchType(NT_SUBPRGHEAD); return;}
 		subPrgHeadPrime();
 	}
 	else {
@@ -1137,6 +1163,105 @@ void printSynerr(char * neededTypes, char * nonterminal) {
 		tokStr = attributeToString(tok->attribute->attrInt);
 	}
 	fprintf(listingFile, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
+}
+
+struct blueNode {
+    int type;
+    char *id;
+    blueNode *next;
+}
+
+struct greenNode {
+    int numParams;
+    char *id;
+    struct blueNode *firstBlue;
+    struct greenNode *prev;
+}
+
+struct greenNode *topGreen;
+
+struct greenNode *popGreenNode() {
+    if(topGreen == NULL) {
+        return NULL;
+    }
+    else if(topGreen->prev == NULL) {
+        topGreen = NULL;
+        return NULL;
+    }
+    else {
+        struct greenNode *ret = topGreen;
+        topGreen = topGreen->prev;
+        return ret;
+    }
+}
+
+void pushGreenNode(struct greenNode *newGreen) {
+    if(topGreen == NULL) 
+        topGreen = newGreen;
+    else {
+        newGreen->prev = topGreen;
+        topGreen = newGreen;
+    }
+}
+
+int checkAddGreenNode(struct greenNode *newGreen) {
+    if(topGreen == NULL) //no greens? don't need to check
+        pushGreenNode(newGreen);
+    else {
+        struct greenNode *currGreen = topGreen;
+        //check matching green
+        while(currGreen != NULL) {
+            if(strcmp(currGreen->id, newGreen->id) == 0) {
+                //todo complain
+                return 0;
+            }
+            
+            struct blueNode *currBlue = currGreen->firstBlue;
+            //check matching blue
+            while(currBlue != NULL) {
+                if(strcmp(currBlue->id, newGreen->id) == 0) {
+                    //todo complain
+                    return 0;
+                }
+                currBlue = currBlue->next;
+            }
+            //no matching blue
+            currGreen = currGreen->prev;
+        }
+        //no matching blue or green, good to push on to stack
+        pushGreenNode(newGreen);
+    }
+    return 1;
+}
+
+void checkAddBlueNode(struct blueNode *newBlue) {
+
+    //check matching green
+    if(strcmp(topGreen->id, newBlue->id) == 0) {
+        //todo complain
+        return;
+    }
+
+    struct blueNode *currBlue = topGreen->firstBlue;
+    //check matching blue
+    while(currBlue != NULL) {
+        if(strcmp(currBlue->id, newBlue->id) == 0) {
+            //todo complain
+            return;
+        }
+        currBlue = currBlue->next;
+    }
+
+    //no matching blue or green, good to add to linked list
+   if(topGreen->firstBlue == NULL) {
+       topGreen->firstBlue = newBlue;
+       return;
+   }
+   struct blueNode *emptyBlue = topGreen->firstBlue;
+   while(emptyBlue->next != NULL) {
+       emptyBlue = emptyBlue->next;
+   }
+   emptyBlue->next = newBlue;
 }
 
 void finish() {
