@@ -83,14 +83,17 @@
 #define NT_FACTOR 20
 #define NT_SIGN 21
 //types
-#define INT_TYPE = 0
-#define BOOL_TYPE = 1
-#define ARRAY_INT_TYPE = 2
-#define ARRAY_BOOL_TYPE = 3
-//a variable was made in variable production,will be constrained later
-#define ANY_TYPE = 4
-//in variable production, an array was made, will be constrained later
-#define ANY_ARRAY_TYPE = 5 
+#define INT_TYPE 0
+#define BOOL_TYPE 1
+#define ARRAY_INT_TYPE 2
+#define ARRAY_BOOL_TYPE 3
+#define REAL_TYPE 4
+#define ARRAY_REAL_TYPE 5
+#define FP_INT_TYPE 6
+#define FP_BOOL_TYPE 7
+#define FP_ARRAY_INT_TYPE 8
+#define FP_REAL_TYPE 9
+#define FP_ARRAY_REAL_TYPE 10
 
 extern void loadFiles(char* src);
 extern struct token *getNextToken(FILE * listingFile);

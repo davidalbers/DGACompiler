@@ -34,7 +34,7 @@ void stmtLstPrime();
 void stmt();
 void stmtPrime();
 struct varReturn *var();
-struct typeReturn *varPrime();
+struct typeReturn *varPrime(int type);
 void expLst();
 void expLstPrime();
 struct typeReturn *expr();
@@ -52,6 +52,7 @@ int synch(struct token * tok, int syncingType);
 void synchType(int syncingType);
 void printSynerr(char * neededTypes, char * nonterminal);
 void printMatchSynerr(char * matchType);
+int typeToFPType(int type);
 
 FILE * listingFile;
 extern int errno;
@@ -174,8 +175,8 @@ void decls() {
 			if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
 			struct typeReturn *tType = type();
-			//todo lexeme.type = type
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
+			checkAddType(lexeme, tType->type);
 			declsPrime();
 			break;
 		default: 
@@ -194,8 +195,8 @@ void declsPrime() {
 			if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
 			type();
-			//todo lexeme.type = type
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
+			checkAddType(lexeme, tType->type);
 			declsPrime();
 			break;
 		case BEGIN:
@@ -389,7 +390,8 @@ void paramLst() {
 		if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
 		struct typeReturn *tType = type();
-		//todo lexeme.type = type, fp_type
+		int fpType = typeToFPType(tType->type);
+		checkAddType(lexeme, fpType);
 		paramLstPrime();
 	}
 	else {
@@ -405,7 +407,8 @@ void paramLstPrime() {
 		if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
 		struct typeReturn *tType = type();
-		//todo lexeme.type = type, fp_type
+		int fpType = typeToFPType(tType->type);
+		checkAddType(lexeme, tType->type);
 		paramLstPrime();
 	}
 	else if(tok->tokenName == CLOSEPAREN) 
@@ -413,6 +416,24 @@ void paramLstPrime() {
 	else {
 		printSynerr("semicolon or close paren", "param_list'");
 		synchType(NT_PARAMLST); 
+	}
+}
+
+int typeToFPType(int type) {
+	switch(type) {
+		case INT_TYPE:
+			return FP_INT_TYPE;
+		case BOOL_TYPE:
+			return FP_BOOL_TYPE;
+		case ARRAY_INT_TYPE:
+			return FP_ARRAY_INT_TYPE;
+		case ARRAY_REAL_TYPE:
+			return FP_ARRAY_REAL_TYPE;
+		case REAL_TYPE:
+			return FP_REAL_TYPE;
+		default:
+			//err, should not happen
+			return -1;
 	}
 }
 
@@ -482,10 +503,7 @@ void stmt() {
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
 		struct typeReturn *eType = expr();
 		if(eType->encounteredError == 0 && vType->encounteredError == 0) {
-			if(vType->type == ARRAY_TYPE && (eType->type == ARRAY_INT_TYPE || eType->type == ARRAY_REAL_TYPE)) {
-				//todo create var with type
-			}
-			else {
+			if(vType->type != eType->type) {
 				//todo err
 			}
 		}
@@ -537,10 +555,14 @@ void stmtPrime() {
 
 struct varReturn *var() {
 	if(tok->tokenName == ID) {
-		char* lexeme = tok->attribute->attrString;
-		if(!match(ID)) {synchType(NT_VAR); return;}
-		struct typeReturn *vType = varPrime();
 		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
+		char* lexeme = tok->attribute->attrString;
+		struct typeReturn *idType = matchId(NT_VAR); 
+		if(idType->encounteredError == 1){
+			ret->encounteredError = 1;
+			return ret;
+		}
+		struct typeReturn *vType = varPrime(idType->type);
 		ret->type = vType->type;
 		ret->lexeme = lexeme;
 		return ret;
@@ -554,21 +576,39 @@ struct varReturn *var() {
 	}
 }
 
-struct typeReturn *varPrime() {
+struct typeReturn *varPrime(int type) {
 	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
 	if(tok->tokenName == ID) {
-		ret->type = ANY_TYPE;
+		ret->type = type;
 		return ret;//epsilon
 	}
 	else if(tok->tokenName == OPENBRACKET) {
+
 		if(!match(OPENBRACKET)) {synchType(NT_VAR); return;}
-		expr();
+		struct typeReturn *eType = expr();
 		if(!match(CLOSEBRACKET)) {synchType(NT_VAR); return;}
-		ret->type = ARRAY_TYPE;
-		return ret;//epsilon
+		//array indices have to be ints
+		if(eType != INT_TYPE) {
+			ret->encounteredError = 1;
+			return ret;
+		}
+		//return the type which is being contained in the array
+		if(type == ARRAY_INT_TYPE) {
+			ret->type = INT_TYPE;
+			return ret;
+		}
+		else if(type == ARRAY_REAL_TYPE) {
+			ret->type = REAL_TYPE;
+			return ret;
+		}
+		else {
+			ret->encounteredError = 1;
+			return ret;
+		}
+
 	}
 	else if(tok->tokenName == ASSIGNOP) {
-		ret->type = ANY_TYPE;
+		ret->type = type;
 		return ret;//epsilon
 	}
 	else {
@@ -913,6 +953,11 @@ void sign() {
 			printSynerr("plus or minus", "sign");
 			synchType(NT_SIGN);
 	}
+}
+
+void checkAddType(char *lexeme, int type) {
+	struct node *matched = getSymbol(lexeme);
+	matched->type = type;
 }
 
 int match(int type) {
