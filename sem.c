@@ -53,7 +53,10 @@ void synchType(int syncingType);
 void printSynerr(char * neededTypes, char * nonterminal);
 void printMatchSynerr(char * matchType);
 int typeToFPType(int type);
-
+int checkAddBlueNode(struct blueNode * newBlue);
+int checkAddGreenNode(struct greenNode * newGreen);
+struct greenNode *popGreenNode();
+void pushGreenNode(struct greenNode *newGreen);
 FILE * listingFile;
 extern int errno;
 
@@ -185,6 +188,15 @@ void decls() {
 			char* lexeme = NULL;
 			if(tok->tokenName == ID)
 				lexeme = tok->attribute->attrString;
+			else {
+				synchType(NT_PROGRAM); return;
+			}
+			struct blueNode *newBlue = (struct blueNode *)malloc(sizeof(struct blueNode));
+			blueNode->id = lexeme;
+			int success = checkAddBlueNode(newBlue);
+			if(success == 0) {
+				//todo complain 
+			}
 			if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
 			struct typeReturn *tType = type();
@@ -302,6 +314,11 @@ void subPrgDeclsPrime() {
 	if(tok->attribute->attrInt == FUNCTION) {
 		subPrgDecls();
 		if(!match(SEMICOLON)) {synchType(NT_SUBPRGDECLS); return;}
+		struct greenNode *popped = popGreenNode();
+		if(popped == NULL) {
+			puts("Stack is empty");
+			return;
+		}
 		subPrgDeclsPrime();
 	}
 	else if(tok->attribute->attrInt == BEGIN)
@@ -369,7 +386,9 @@ void subPrgHead() {
 		newGreen->id = lexeme;
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
-			//todo complain 
+			puts("already declared this");
+			synchType(NT_SUBPRGHEAD);
+			return;
 		}
 		//if(!match(ID)) {synchType(NT_SUBPRGHEAD); return;}
 		subPrgHeadPrime();
@@ -1165,18 +1184,7 @@ void printSynerr(char * neededTypes, char * nonterminal) {
 	fprintf(listingFile, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
 }
 
-struct blueNode {
-    int type;
-    char *id;
-    blueNode *next;
-}
 
-struct greenNode {
-    int numParams;
-    char *id;
-    struct blueNode *firstBlue;
-    struct greenNode *prev;
-}
 
 struct greenNode *topGreen;
 
@@ -1234,12 +1242,12 @@ int checkAddGreenNode(struct greenNode *newGreen) {
     return 1;
 }
 
-void checkAddBlueNode(struct blueNode *newBlue) {
+int checkAddBlueNode(struct blueNode *newBlue) {
 
     //check matching green
     if(strcmp(topGreen->id, newBlue->id) == 0) {
         //todo complain
-        return;
+        return 0;
     }
 
     struct blueNode *currBlue = topGreen->firstBlue;
@@ -1247,7 +1255,7 @@ void checkAddBlueNode(struct blueNode *newBlue) {
     while(currBlue != NULL) {
         if(strcmp(currBlue->id, newBlue->id) == 0) {
             //todo complain
-            return;
+            return 0;
         }
         currBlue = currBlue->next;
     }
@@ -1255,13 +1263,14 @@ void checkAddBlueNode(struct blueNode *newBlue) {
     //no matching blue or green, good to add to linked list
    if(topGreen->firstBlue == NULL) {
        topGreen->firstBlue = newBlue;
-       return;
+       return 1;
    }
    struct blueNode *emptyBlue = topGreen->firstBlue;
    while(emptyBlue->next != NULL) {
        emptyBlue = emptyBlue->next;
    }
    emptyBlue->next = newBlue;
+   return 1;
 }
 
 void finish() {

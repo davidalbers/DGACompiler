@@ -118,12 +118,12 @@ struct token {
 
 struct typeReturn {
 	int encounteredError;
-	int val = -1;
+	int val;
 };
 
 struct varReturn {
 	int encounteredError;
-	int val = -1;
+	int val;
 	char *lexeme;
 };
 
@@ -132,5 +132,18 @@ struct node {
 	int type;
 	struct node *next;
 } *symbolTableRoot;
+
+struct blueNode {
+    int type;
+    char *id;
+    blueNode *next;
+}
+
+struct greenNode {
+    int numParams;
+    char *id;
+    struct blueNode *firstBlue;
+    struct greenNode *prev;
+}
 
 #endif
