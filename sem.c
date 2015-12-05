@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lex.h"
 
 struct token *tok;
@@ -14,8 +15,8 @@ void idLst();
 void idLstPrime();
 void decls();
 void declsPrime();
-struct typeReturn *type();
-struct typeReturn *stdType();
+int type();
+int stdType();
 void subPrgDecls();
 void subPrgDeclsPrime();
 void subPrgDecl();
@@ -34,19 +35,19 @@ void stmtLstPrime();
 void stmt();
 void stmtPrime();
 struct varReturn *var();
-struct typeReturn *varPrime(int type);
+int varPrime(int type);
 void expLst();
 void expLstPrime();
-struct typeReturn *expr();
-struct typeReturn *exprPrime(int type);
-struct typeReturn *simExp();
-struct typeReturn *simExpPrime(int type);
-struct typeReturn *term();
-void termPrime();
-struct typeReturn *factor();
-struct typeReturn *matchNum(int nt);
-struct typeReturn *matchId(int nt);
-struct typeReturn *factorPrime(int type);
+int expr();
+int exprPrime(int type);
+int simExp();
+int simExpPrime(int type);
+int term();
+int termPrime();
+int factor();
+int matchNum(int nt);
+int matchId(int nt);
+int factorPrime(int type);
 void sign();
 int synch(struct token * tok, int syncingType);
 void synchType(int syncingType);
@@ -57,8 +58,10 @@ int checkAddBlueNode(struct blueNode * newBlue);
 int checkAddGreenNode(struct greenNode * newGreen);
 struct greenNode *popGreenNode();
 void pushGreenNode(struct greenNode *newGreen);
+void checkAddType(char *lexeme, int type);
 FILE * listingFile;
 extern int errno;
+int tokenizingLine = 0;
 
 int main(int argc, char *argv[]) 
 {
@@ -90,24 +93,32 @@ void parse() {
 void program() {
 	if(tok->attribute->attrInt == PROGRAM){
 		if(!match(PROGRAM)) {synchType(NT_PROGRAM); return;}
+		
 		char *lexeme = NULL;
 		if(tok->tokenName == ID) {
 			lexeme = tok->attribute->attrString;
 		}
 		else {
+			puts("failed to add to stack");
 			synchType(NT_PROGRAM); return;
 		}
 		struct greenNode *newGreen = (struct greenNode *)malloc(sizeof(struct greenNode));
 		newGreen->id = lexeme;
+		tok = getNextToken(listingFile);
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
-			//todo complain 
+			puts("failed to add to stack");
+			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newGreen->id);
 		}
+
 		//if(!match(ID)) {synchType(NT_PROGRAM); return;}
+
 		if(!match(OPENPAREN)) {synchType(NT_PROGRAM); return;}
+		puts("End of prog processing");
 		idLst();
 		if(!match(CLOSEPAREN)) {synchType(NT_PROGRAM); return;}
 		if(!match(SEMICOLON)) {synchType(NT_PROGRAM); return;}
+		
 		programPrime();
 	}
 	else {
@@ -126,11 +137,37 @@ void programPrime() {
 		case BEGIN:
 			cpdStmt();
 			if(!match(PERIOD)) {synchType(NT_PROGRAM); break;}
+			struct greenNode *popped = popGreenNode();
+			if(popped == NULL) {
+				puts("Stack is empty");
+				return;
+			}
+			else {
+				struct blueNode *currBlue = popped->firstBlue;
+				printf("Popped a green node, here are its contents:\n");
+				while(currBlue != NULL) {
+					printf("%s,%d\n", currBlue->id, currBlue->type);
+					currBlue = currBlue->next;
+				}
+			}
 			break;
 		case FUNCTION:
 			subPrgDecls();
 			cpdStmt();
 			if(!match(PERIOD)) {synchType(NT_PROGRAM); break;}
+			struct greenNode *popped2 = popGreenNode();
+			if(popped2 == NULL) {
+				puts("Stack is empty");
+				return;
+			}
+			else {
+				struct blueNode *currBlue = popped2->firstBlue;
+				printf("Popped a green node, here are its contents:\n");
+				while(currBlue != NULL) {
+					printf("%s,%d\n", currBlue->id, currBlue->type);
+					currBlue = currBlue->next;
+				}
+			}
 			break;
 		default:
 			printSynerr("var, begin, or function", "program'");
@@ -143,11 +180,37 @@ void programPrime2() {
 		case BEGIN:
 			cpdStmt();
 			if(!match(PERIOD)) {synchType(NT_PROGRAM); break;}
+			struct greenNode *popped = popGreenNode();
+			if(popped == NULL) {
+				puts("Stack is empty");
+				return;
+			}
+			else {
+				struct blueNode *currBlue = popped->firstBlue;
+				printf("Popped a green node, here are its contents:\n");
+				while(currBlue != NULL) {
+					printf("%s,%d\n", currBlue->id, currBlue->type);
+					currBlue = currBlue->next;
+				}
+			}
 			break;
 		case FUNCTION:
 			subPrgDecls();
 			cpdStmt();
 			if(!match(PERIOD)) {synchType(NT_PROGRAM); break;}
+			struct greenNode *popped2 = popGreenNode();
+			if(popped2 == NULL) {
+				puts("Stack is empty");
+				return;
+			}
+			else {
+				struct blueNode *currBlue = popped2->firstBlue;
+				printf("Popped a green node, here are its contents:\n");
+				while(currBlue != NULL) {
+					printf("%s,%d\n", currBlue->id, currBlue->type);
+					currBlue = currBlue->next;
+				}
+			}
 			break;
 		default:
 			printSynerr("begin of function", "program''");
@@ -192,16 +255,21 @@ void decls() {
 				synchType(NT_PROGRAM); return;
 			}
 			struct blueNode *newBlue = (struct blueNode *)malloc(sizeof(struct blueNode));
-			blueNode->id = lexeme;
+			newBlue->id = lexeme;
 			int success = checkAddBlueNode(newBlue);
 			if(success == 0) {
-				//todo complain 
+				fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
+				puts("failed to get blue node");
 			}
-			if(!match(ID)) {synchType(NT_DECLS); break;}
+			else {
+				puts("got blue node");
+			}
+			tok = getNextToken(listingFile);
+			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
-			struct typeReturn *tType = type();
+			int tType = type();
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
-			checkAddType(lexeme, tType->type);
+			checkAddType(lexeme, tType);
 			declsPrime();
 			break;
 		default: 
@@ -217,11 +285,25 @@ void declsPrime() {
 			char* lexeme = NULL;
 			if(tok->tokenName == ID)
 				lexeme = tok->attribute->attrString;
-			if(!match(ID)) {synchType(NT_DECLS); break;}
+			else {
+				synchType(NT_PROGRAM); return;
+			}
+			struct blueNode *newBlue = (struct blueNode *)malloc(sizeof(struct blueNode));
+			newBlue->id = lexeme;
+			int success = checkAddBlueNode(newBlue);
+			if(success == 0) {
+				fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
+				puts("failed to get blue node");
+			}
+			else {
+				puts("got blue node");
+			}
+			tok = getNextToken(listingFile);
+			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
-			type();
+			int tType = type();
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
-			checkAddType(lexeme, tType->type);
+			checkAddType(lexeme, tType);
 			declsPrime();
 			break;
 		case BEGIN:
@@ -233,68 +315,77 @@ void declsPrime() {
 	}
 }
 
-struct typeReturn *type() {
+int type() {
 	if(tok->attribute->attrInt == INTEGER || tok->attribute->attrInt == REAL) {
 		return stdType();
 	}
 	else if(tok->attribute->attrInt == ARRAY) {
-		if(!match(ARRAY)) {synchType(NT_TYPE); return;}
-		if(!match(OPENBRACKET)) {synchType(NT_TYPE); return;}
-		if(!match(NUM)) {synchType(NT_TYPE); return;}
-		if(!match(ARRAYRANGE)) {synchType(NT_TYPE); return;}
-		if(!match(NUM)) {synchType(NT_TYPE); return;}
-		if(!match(CLOSEBRACKET)) {synchType(NT_TYPE); return;}
-		if(!match(OF)) {synchType(NT_TYPE); return;}
-		struct typeReturn *sType = stdType();
-		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-		if(sType->type == INT_TYPE) {
-			ret->type = ARRAY_INT_TYPE;
-			return ret;
+		if(!match(ARRAY)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
 		}
-		else if(sType->type == REAL_TYPE) {
-			ret->type = ARRAY_REAL_TYPE;
-			return ret;
+		if(!match(OPENBRACKET)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
+		}
+		if(!match(NUM)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
+		}
+		if(!match(ARRAYRANGE)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
+		}
+		if(!match(NUM)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
+		}
+		if(!match(CLOSEBRACKET)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
+		}
+		if(!match(OF)) {
+			synchType(NT_TYPE); 
+			return ERROR_TYPE;
+		}
+		int sType = stdType();
+		if(sType == INT_TYPE) {
+			return ARRAY_INT_TYPE;
+		}
+		else if(sType == REAL_TYPE) {
+			return ARRAY_REAL_TYPE;
 		}
 		else {
-			ret->encounteredError = 1;
-			return ret;
+			return ERROR_TYPE;
 		}
 	}
 	else {
 		printSynerr("intger, real, or array", "type");
 		synchType(NT_TYPE);
 
-		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 } 
 
-struct typeReturn *stdType() {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int stdType() {
 	if(tok->attribute->attrInt == INTEGER) {
 		if(!match(INTEGER)) {
 			synchType(NT_STDTYPE); 
-			ret->encounteredError = 1;
-			return ret;
+			return ERROR_TYPE;
 		}
-		ret->type = INT_TYPE;
-		return ret;
+		return INT_TYPE;
 	}
 	else if(tok->attribute->attrInt == REAL) {
 		if(!match(REAL)) {
 			synchType(NT_STDTYPE); 
-			ret->encounteredError = 1;
-			return ret;
+			return ERROR_TYPE;
 		}
-		ret->type = REAL_TYPE;
-		return ret;
+		return REAL_TYPE;
 	}
 	else {
 		printSynerr("integer or real", "standard_type");
 		synchType(NT_STDTYPE);
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
@@ -319,10 +410,32 @@ void subPrgDeclsPrime() {
 			puts("Stack is empty");
 			return;
 		}
+		else {
+			struct blueNode *currBlue = popped->firstBlue;
+			printf("Popped a green node, here are its contents:\n");
+			while(currBlue != NULL) {
+				printf("%s,%d\n", currBlue->id, currBlue->type);
+				currBlue = currBlue->next;
+			}
+		}
 		subPrgDeclsPrime();
 	}
-	else if(tok->attribute->attrInt == BEGIN)
+	else if(tok->attribute->attrInt == BEGIN){
+		struct greenNode *popped = popGreenNode();
+		if(popped == NULL) {
+			puts("Stack is empty");
+			return;
+		}
+		else {
+			struct blueNode *currBlue = popped->firstBlue;
+			printf("Popped a green node, here are its contents:\n");
+			while(currBlue != NULL) {
+				printf("%s,%d\n", currBlue->id, currBlue->type);
+				currBlue = currBlue->next;
+			}
+		}
 		return; //epsilon
+	}
 	else {
 		printSynerr("function or begin", "subprogram_declarations'");
 		synchType(NT_SUBPRGDECLS);
@@ -386,10 +499,12 @@ void subPrgHead() {
 		newGreen->id = lexeme;
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
+			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newGreen->id);
 			puts("already declared this");
 			synchType(NT_SUBPRGHEAD);
 			return;
 		}
+		tok = getNextToken(listingFile);
 		//if(!match(ID)) {synchType(NT_SUBPRGHEAD); return;}
 		subPrgHeadPrime();
 	}
@@ -431,11 +546,27 @@ void args() {
 
 void paramLst() {
 	if(tok->tokenName == ID) {
-		char *lexeme = tok->attribute->attrString;
-		if(!match(ID)) {synchType(NT_PARAMLST); return;}
+		char* lexeme = NULL;
+		if(tok->tokenName == ID)
+			lexeme = tok->attribute->attrString;
+		else {
+			synchType(NT_PROGRAM); return;
+		}
+		struct blueNode *newBlue = (struct blueNode *)malloc(sizeof(struct blueNode));
+		newBlue->id = lexeme;
+		int success = checkAddBlueNode(newBlue);
+		if(success == 0) {
+			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
+			puts("failed to get blue node");
+		}
+		else {
+			puts("got blue node");
+		}
+		tok = getNextToken(listingFile);
+		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
-		struct typeReturn *tType = type();
-		int fpType = typeToFPType(tType->type);
+		int tType = type();
+		int fpType = typeToFPType(tType);
 		checkAddType(lexeme, fpType);
 		paramLstPrime();
 	}
@@ -448,12 +579,28 @@ void paramLst() {
 void paramLstPrime() {
 	if(tok->tokenName == SEMICOLON) {
 		if(!match(SEMICOLON)) {synchType(NT_PARAMLST); return;}
-		char *lexeme = tok->attribute->attrString;
-		if(!match(ID)) {synchType(NT_PARAMLST); return;}
+		char* lexeme = NULL;
+		if(tok->tokenName == ID)
+			lexeme = tok->attribute->attrString;
+		else {
+			synchType(NT_PROGRAM); return;
+		}
+		struct blueNode *newBlue = (struct blueNode *)malloc(sizeof(struct blueNode));
+		newBlue->id = lexeme;
+		int success = checkAddBlueNode(newBlue);
+		if(success == 0) {
+			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
+			puts("failed to get blue node");
+		}
+		else {
+			puts("got blue node");
+		}
+		tok = getNextToken(listingFile);
+		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
-		struct typeReturn *tType = type();
-		int fpType = typeToFPType(tType->type);
-		checkAddType(lexeme, tType->type);
+		int tType = type();
+		int fpType = typeToFPType(tType);
+		checkAddType(lexeme, tType);
 		paramLstPrime();
 	}
 	else if(tok->tokenName == CLOSEPAREN) 
@@ -536,7 +683,7 @@ void stmtLstPrime() {
 	}
 	else if (tok->attribute->attrInt == END) 
 		return;//epsilon
-	else {
+	else { 
 		printSynerr("semicolon or end", "statement_list'");
 		synchType(NT_STMTLST);
 	}
@@ -546,14 +693,11 @@ void stmt() {
 	if(tok->tokenName == ID) {
 		struct varReturn *vType = var();
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
-		struct typeReturn *eType = expr();
-		if(eType->encounteredError == 0 && vType->encounteredError == 0) {
-			if(vType->type != eType->type) {
-				//todo err
+		int eType = expr();
+		if(eType != ERROR_TYPE && vType->type != ERROR_TYPE) {
+			if(vType->type != eType) {
+				fprintf(listingFile, "SEM ERR: Cannot assign value of type %d to variable '%s' of type %d.\n", eType, vType->lexeme, vType->type);
 			}
-		}
-		else {
-			//todo err
 		}
 
 	} 
@@ -562,9 +706,9 @@ void stmt() {
 	} 
 	else if( tok->attribute->attrInt == IF) {
 		if(!match(IF)) {synchType(NT_STMT); return;}
-		struct typeReturn *eType = expr();
-		if(eType->type != BOOL_TYPE) {
-			//todo err
+		int eType = expr();
+		if(eType != BOOL_TYPE) {
+			fprintf(listingFile, "SEM ERR: Expecting bool type in 'if' condition\n");
 		}
 		if(!match(THEN)) {synchType(NT_STMT); return;}
 		stmt();
@@ -572,9 +716,9 @@ void stmt() {
 	} 
 	else if( tok->attribute->attrInt == WHILE) {
 		if(!match(WHILE)) {synchType(NT_STMT); return;}
-		struct typeReturn *eType = expr();
-		if(eType->type != BOOL_TYPE) {
-			//todo err
+		int eType = expr();
+		if(eType != BOOL_TYPE) {
+			fprintf(listingFile, "SEM ERR: Expecting bool type in 'while' condition\n");
 		}
 		if(!match(DO)) {synchType(NT_STMT); return;}
 		stmt();
@@ -602,13 +746,12 @@ struct varReturn *var() {
 	if(tok->tokenName == ID) {
 		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
 		char* lexeme = tok->attribute->attrString;
-		struct typeReturn *idType = matchId(NT_VAR); 
-		if(idType->encounteredError == 1){
-			ret->encounteredError = 1;
-			return ret;
+		int idType = matchId(NT_VAR); 
+		if(idType == ERROR_TYPE) {
+			fprintf(listingFile, "SEM ERR: identifier '%s' has not been declared\n", lexeme);
 		}
-		struct typeReturn *vType = varPrime(idType->type);
-		ret->type = vType->type;
+		int vType = varPrime(idType);
+		ret->type = vType;
 		ret->lexeme = lexeme;
 		return ret;
 	}
@@ -616,51 +759,34 @@ struct varReturn *var() {
 		printSynerr("id", "variable");
 		synchType(NT_VAR);
 		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
-		ret->encounteredError = 1;
+		ret->type = ERROR_TYPE;
 		return ret;
 	}
 }
 
-struct typeReturn *varPrime(int type) {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int varPrime(int type) {
 	if(tok->tokenName == ID) {
-		ret->type = type;
-		return ret;//epsilon
+		return type;
 	}
 	else if(tok->tokenName == OPENBRACKET) {
 
-		if(!match(OPENBRACKET)) {synchType(NT_VAR); return;}
-		struct typeReturn *eType = expr();
-		if(!match(CLOSEBRACKET)) {synchType(NT_VAR); return;}
+		if(!match(OPENBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
+		int eType = expr();
+		if(!match(CLOSEBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
 		//array indices have to be ints
-		if(eType != INT_TYPE) {
-			ret->encounteredError = 1;
-			return ret;
-		}
+		if(eType != INT_TYPE) { return ERROR_TYPE; }
 		//return the type which is being contained in the array
-		if(type == ARRAY_INT_TYPE) {
-			ret->type = INT_TYPE;
-			return ret;
-		}
-		else if(type == ARRAY_REAL_TYPE) {
-			ret->type = REAL_TYPE;
-			return ret;
-		}
-		else {
-			ret->encounteredError = 1;
-			return ret;
-		}
-
+		if(type == ARRAY_INT_TYPE) { return INT_TYPE; }
+		else if(type == ARRAY_REAL_TYPE) { return REAL_TYPE; }
+		else { return ERROR_TYPE; }
 	}
 	else if(tok->tokenName == ASSIGNOP) {
-		ret->type = type;
-		return ret;//epsilon
+		return type;
 	}
 	else {
 		printSynerr("id, open bracket, or assign op", "variable'");
 		synchType(NT_VAR);
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
@@ -692,174 +818,140 @@ void expLstPrime() {
 	}
 }
 
-struct typeReturn *expr() {
+int expr() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM ||
 		tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT || tok->attribute->attrInt == NOT) {
-		struct typeReturn *sType = simExp();
-		return exprPrime(sType->type);
+		int sType = simExp();
+		return exprPrime(sType);
 	}
 	else {
 		printSynerr("open paren, id, num, plus, minus, not", "expression");
 		synchType(NT_EXPR);
-		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
-struct typeReturn *exprPrime(int type) { 
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int exprPrime(int type) { 
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == SEMICOLON || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 	 tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == COMMA || 
 	 tok->attribute->attrInt == ELSE ) {
-	 	ret->type = type;
-		return ret;//epsilon
+	 	return type;
 	}
 	else if(tok->tokenName == RELOP) {
-		if(type != INT_TYPE && type != REAL_TYPE) {
-			ret->encounteredError = 1;
-			return ret;
-		}
-		if(!match(RELOP)) {
-			synchType(NT_EXPR); 
-			ret->encounteredError = 1;
-			return ret;
-		}
-		struct typeReturn *sType = simExp();
-		if(sType->type != INT_TYPE && sType->type != REAL_TYPE) {
-			ret->encounteredError = 1;
-			return ret;
-		}
-		ret->type = BOOL_TYPE;
-		return ret;
+		if(type != INT_TYPE && type != REAL_TYPE) { return ERROR_TYPE; }
+		if(!match(RELOP)) {synchType(NT_EXPR); return ERROR_TYPE;}
+		int sType = simExp();
+		if(sType != INT_TYPE && sType != REAL_TYPE) {return ERROR_TYPE;}
+		return BOOL_TYPE;
 	}
 	else {
 		printSynerr("relop, close paren, semicolon, end, CLOSEBRACKET, then, do, comma, else", "expression");
 		synchType(NT_EXPR);
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
-struct typeReturn *simExp() {
+int simExp() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM || tok->attribute->attrInt == NOT) {
-		struct typeReturn *tType = term();
-		return simExpPrime(tType->type);
+		int tType = term();
+		return simExpPrime(tType);
 	}
 	else if(tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT) {
 		sign();
-		struct typeReturn *sType = term();
-		if(sType->type == INT_TYPE || sType->type == REAL_TYPE) {
-			return simExpPrime(sType->type);
+		int sType = term();
+		if(sType == INT_TYPE || sType == REAL_TYPE) {
+			return simExpPrime(sType);
 		}
 		else {
-			struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-			ret->encounteredError = 1;
-			return ret;
+			return ERROR_TYPE;
 		}
 	}
 	else {
 		printSynerr("open paren, id, num, plus, minus, not", "simple_expression");
 		synchType(NT_SIMEXP);
 
-		struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
-struct typeReturn *simExpPrime(int type) {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int simExpPrime(int type) {
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == SEMICOLON || tok->tokenName == RELOP || tok->tokenName == CLOSEBRACKET || tok->tokenName == COMMA || tok->attribute->attrInt == END ||
 	  tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->attribute->attrInt == ELSE ) {
-		ret->type = type;
-		return ret;//epsilon
+		return type;
 	}
 	else if(tok->tokenName == ADDOP) {
 		int addOp = tok->attribute->attrInt;
 		if(!match(ADDOP)) {
 			synchType(NT_SIMEXP);
-			ret->encounteredError = 1;
-			return ret;
+			return ERROR_TYPE;
 		}
-		struct typeReturn *sType = term();
+		int sType = term();
 		//make sure only nums are being added or subtracted
-		if(addop == ADD || addop == SUBTRACT)
+		if(addOp == ADD || addOp == SUBTRACT) {
 			if(!(type == INT_TYPE || type == REAL_TYPE) || 
-				!(sType->type == INT_TYPE || sType->type == REAL_TYPE))  {
-				ret->encounteredError = 1;
-				return ret;
+				!(sType == INT_TYPE || sType == REAL_TYPE))  {
+				return ERROR_TYPE;
 			}
 		}
 		//make sure only bools are being OR'd
-		if(addop == OR) {
-			if(type != BOOL_TYPE || sType->type != BOOL_TYPE) {
-				ret->encounteredError = 1;
-				return ret;
+		if(addOp == OR) {
+			if(type != BOOL_TYPE || sType != BOOL_TYPE) {
+				return ERROR_TYPE;
 			}
 		}
-		return simExpPrime(sType->type);
+		return simExpPrime(sType);
 	}
 	else {
 		printSynerr("addop, open paren, id, num, plus, minus, not", "simple_expression'");
 		synchType(NT_SIMEXP);
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
-struct typeReturn *term() {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int term() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM || tok->attribute->attrInt == NOT) {
-		struct typeReturn *tval = factor();
-		return termPrime(tval->val);
+		int tval = factor();
+		return termPrime(tval);
 	}
 	else {
 		printSynerr("open paren, id, num, not", "term");
 		synchType(NT_TERM);
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
-struct typeReturn *termPrime(int termPIn) {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int termPrime(int termPIn) {
 	if(tok->tokenName == CLOSEPAREN || tok->tokenName == RELOP || tok->tokenName == SEMICOLON || tok->tokenName == CLOSEBRACKET || 
 			tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
 			 tok->tokenName == COMMA || tok->attribute->attrInt == ELSE ||tok->attribute->attrInt == END ) {
-		ret->val = termPIn;
-		return ret;//epsilon
+		return termPIn;
 	}
 	else if(tok->tokenName == MULOP) {
 		int mulop = tok->attribute->attrInt;
 		if(!match(MULOP)) {
 			synchType(NT_TERM); 
-			ret->encounteredError = 1;
-			return ret;
+			return ERROR_TYPE;
 		}
-		struct typeReturn *fType = factor(termPIn);
+		int fType = factor(termPIn);
 		int generatedType = -1;
 		if(mulop == MULTIPLY || mulop == DIVIDE) {
 			if(!(termPIn == INT_TYPE || termPIn == REAL_TYPE) || 
-				!(fType->type == INT_TYPE || fType->type == REAL_TYPE)) {
-				ret->encounteredError = 1;
-				return ret;
+				!(fType == INT_TYPE || fType == REAL_TYPE)) {
+				return ERROR_TYPE;
 			}
 			else 
 				generatedType = REAL_TYPE;
 		}
 		if(mulop == DIV || mulop == MOD) {
-			if(termPIn != INT_TYPE || fType->type != INT_TYPE) {
-				ret->encounteredError = 1;
-				return ret;
+			if(termPIn != INT_TYPE || fType != INT_TYPE) {
+				return ERROR_TYPE;
 			}
 			else 
 				generatedType = INT_TYPE;
 		}
 		if(mulop == AND) {
-			if(termPrime != BOOL_TYPE || fType-> != BOOL_TYPE) {
-				ret->encounteredError = 1;
-				return ret;
+			if(termPIn != BOOL_TYPE || fType != BOOL_TYPE) {
+				return ERROR_TYPE;
 			}
 			else
 				generatedType = BOOL_TYPE;
@@ -869,118 +961,124 @@ struct typeReturn *termPrime(int termPIn) {
 	else {
 		printSynerr("mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end", "term'");
 		synchType(NT_TERM);
-		ret->encounteredError = 1;
-		return ret;
+		return ERROR_TYPE;
 	}
 }
 
-struct typeReturn *factor() {
-	struct typeReturn *fail = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-	fail->encounteredError = 1;
+int factor() {
 	if(tok->tokenName == OPENPAREN) {
-		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return fail;}
-		struct typeReturn *fval = expr();
-		if(fval->encounteredError == 1)
-			return fail;
-		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return fail;}
+		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
+		int fval = expr();
+		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
 		return fval;
 	}
 	else if(tok->tokenName == ID) {
-		struct typeReturn *idType = matchId(NT_FACTOR);
-		if(idType->encounteredError == 1)
-			return fail;		
-		return factorPrime(idType->type);
+		char *lexeme = tok->attribute->attrString;
+		int idType = matchId(NT_FACTOR);		
+		if(idType == ERROR_TYPE) {
+			fprintf(listingFile, "SEM ERR: identifier '%s' has not been declared\n", lexeme);
+		}
+		return factorPrime(idType);
 	}
 	else if(tok->tokenName == NUM) {
-		struct typeReturn *fval = matchNum(NT_FACTOR);
+		int fval = matchNum(NT_FACTOR);
 		return fval;
 		
 	}
 	else if(tok->attribute->attrInt == NOT) {
-		if(!match(NOT)) {synchType(NT_FACTOR); return fail;}
-		struct typeReturn *fval = factor();
-		if(fval->type != BOOL_TYPE) {
-			fval->encounteredError = 1;
+		if(!match(NOT)) {synchType(NT_FACTOR); return ERROR_TYPE;}
+		int fval = factor();
+		if(fval != BOOL_TYPE) {
+			return ERROR_TYPE;
 		}
 		return fval;
 	}
 	else {
 		printSynerr("open paren, id, num, not", "factor");
 		synchType(NT_FACTOR);
-
+		return ERROR_TYPE;
 	}
-	return fail;
+	
 }
 
-struct typeReturn *matchNum(int nt) {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+int matchNum(int nt) {
+	int ret = -1;
 	if(tok->tokenName == NUM) {
-		ret->val = tok->subName;
+		ret = tok->subName;
+		tok = getNextToken(listingFile);
 	}
 	else {
 		synchType(nt);
-		ret->encounteredError = 1;
+		ret = ERROR_TYPE;
 	}
 	return ret;
 }
 
-struct typeReturn *matchId(int nt) {
-	struct typeReturn *ret = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-	if(tok->tokenName = ID) {
-		struct node *sym = getSymbol(tok->attribute->attrString);
-		if(sym == NULL) {
-			ret->encounteredError = 1;
-			return ret;
-		}
-		ret->type = node->type;
+int matchId(int nt) {
+	puts("attempting to match id");
+	if(tok->tokenName == ID) {
+		struct greenNode *currGreen = topGreen;
+        while(currGreen != NULL) {
+            struct blueNode *currBlue = currGreen->firstBlue;
+            //check matching blue
+            while(currBlue != NULL) {
+                if(strcmp(currBlue->id, tok->attribute->attrString) == 0) {
+                	puts("found match");
+                    tok = getNextToken(listingFile);
+                    return currBlue->type;
+                }
+                currBlue = currBlue->next;
+            }
+            //no matching blue
+            currGreen = currGreen->prev;
+        }
+		//did not find, throw error
+		puts("did not find match");
+		tok = getNextToken(listingFile);
+		return ERROR_TYPE;
 	}
 	else {
 		synchType(nt);
-		ret->encounteredError = 1;
+		return ERROR_TYPE;
 	}
-	return ret;
 }
 
 
-struct typeReturn *factorPrime(int type) {
-	struct typeReturn *fail = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-	fail->encounteredError = 1;
+int factorPrime(int type) {
 	if(tok->tokenName == OPENPAREN) {
-		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return fail;}
-		struct typeReturn *eType = expr();
-		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return fail;}
+		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
+		int eType = expr();
+		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
 		return eType; //todo what is id(expLst) in pascal?
 	}
 	else if(tok->tokenName == OPENBRACKET) {
 		//factor->id[exp], if exp is an int and id is an array return type stored in array
-		if(!match(OPENBRACKET)) {synchType(NT_FACTOR); return fail;}
-		struct typeReturn *eType = expr();
-		if(!match(CLOSEBRACKET)) {synchType(NT_FACTOR); return fail;}
-		struct typeReturn *fType = (struct typeReturn *) malloc(sizeof(struct typeReturn));
+		if(!match(OPENBRACKET)) {synchType(NT_FACTOR); return ERROR_TYPE;}
+		int eType = expr();
+		if(!match(CLOSEBRACKET)) {synchType(NT_FACTOR); return ERROR_TYPE;}
+		int fType = ERROR_TYPE;
 
-		if(eType->type == INT_TYPE) {
+		if(eType == INT_TYPE) {
 			if(type == ARRAY_INT_TYPE) 
-				fType->type = INT_TYPE;
+				fType = INT_TYPE;
 			else if(type == ARRAY_REAL_TYPE)
-				fType->type = REAL_TYPE;
+				fType = REAL_TYPE;
 			else //neither int or real array
-				fType->encounteredError=1;
+				return ERROR_TYPE;
 		}
 		else //exp is not an int
-			fType->encounteredError=1;
+			return ERROR_TYPE;
 		return fType;
 	}
 	else if(tok->tokenName == CLOSEPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 		tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
 		tok->attribute->attrInt == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP) {
-		struct typeReturn *fType = (struct typeReturn *) malloc(sizeof(struct typeReturn));
-		fType->type = type;
-		return fType;//epsilon
+		return type;//epsilon
 	}
 	else {
 		printSynerr("open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop", "factor'");
 		synchType(NT_FACTOR);
-		return fail;
+		return ERROR_TYPE;
 	}
 }
 
@@ -1001,8 +1099,24 @@ void sign() {
 }
 
 void checkAddType(char *lexeme, int type) {
+	//? do you need to add type in both places?
+
+	//add type to symbol table
 	struct node *matched = getSymbol(lexeme);
 	matched->type = type;
+	//add type in blue nodes
+	if(topGreen != NULL) {
+	    struct blueNode *currBlue = topGreen->firstBlue;
+	    //check matching blue
+	    while(currBlue != NULL) {
+	        if(strcmp(currBlue->id, topGreen->id) == 0) {
+	            currBlue->type = type;
+	            break;
+	        }
+	        currBlue = currBlue->next;
+	    }
+	}
+
 }
 
 int match(int type) {
@@ -1043,10 +1157,12 @@ int match(int type) {
 	return 0;
 }
 void synchType(int syncingType) {
+	printf("syncing %d\n", syncingType);
 	while(!synch(tok,syncingType)) {
-		//printf("syncing %d", tok->tokenName);
+		//printf("syncing %d\n", tok->tokenName);
 		tok = getNextToken(listingFile);
-	}	
+	}
+	puts("done syncing");	
 }
 
 int synch(struct token * tok, int syncingType) {
@@ -1184,17 +1300,14 @@ void printSynerr(char * neededTypes, char * nonterminal) {
 	fprintf(listingFile, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
 }
 
-
-
-struct greenNode *topGreen;
-
 struct greenNode *popGreenNode() {
     if(topGreen == NULL) {
         return NULL;
     }
     else if(topGreen->prev == NULL) {
+        struct greenNode *ret = topGreen;
         topGreen = NULL;
-        return NULL;
+        return ret;
     }
     else {
         struct greenNode *ret = topGreen;
@@ -1220,7 +1333,6 @@ int checkAddGreenNode(struct greenNode *newGreen) {
         //check matching green
         while(currGreen != NULL) {
             if(strcmp(currGreen->id, newGreen->id) == 0) {
-                //todo complain
                 return 0;
             }
             
@@ -1228,7 +1340,6 @@ int checkAddGreenNode(struct greenNode *newGreen) {
             //check matching blue
             while(currBlue != NULL) {
                 if(strcmp(currBlue->id, newGreen->id) == 0) {
-                    //todo complain
                     return 0;
                 }
                 currBlue = currBlue->next;
@@ -1246,7 +1357,6 @@ int checkAddBlueNode(struct blueNode *newBlue) {
 
     //check matching green
     if(strcmp(topGreen->id, newBlue->id) == 0) {
-        //todo complain
         return 0;
     }
 
@@ -1254,7 +1364,6 @@ int checkAddBlueNode(struct blueNode *newBlue) {
     //check matching blue
     while(currBlue != NULL) {
         if(strcmp(currBlue->id, newBlue->id) == 0) {
-            //todo complain
             return 0;
         }
         currBlue = currBlue->next;
@@ -1272,6 +1381,7 @@ int checkAddBlueNode(struct blueNode *newBlue) {
    emptyBlue->next = newBlue;
    return 1;
 }
+
 
 void finish() {
 	puts("program finished");

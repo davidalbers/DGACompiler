@@ -94,13 +94,15 @@
 #define FP_ARRAY_INT_TYPE 8
 #define FP_REAL_TYPE 9
 #define FP_ARRAY_REAL_TYPE 10
+#define ERROR_TYPE -1
 
 extern void loadFiles(char* src);
 extern struct token *getNextToken(FILE * listingFile);
 extern char *tokenNameToString(int);
 extern char *attributeToString(int);
 extern struct node *getSymbol(char* id);
-
+extern void appendError(char* error,int lineOccurred);
+extern int tokenizingLine;
 #ifndef LEX_H
 #define LEX_H
 
@@ -115,15 +117,8 @@ struct token {
 	union Attribute *attribute;
 };
 
-
-struct typeReturn {
-	int encounteredError;
-	int val;
-};
-
 struct varReturn {
-	int encounteredError;
-	int val;
+	int type;
 	char *lexeme;
 };
 
@@ -136,14 +131,20 @@ struct node {
 struct blueNode {
     int type;
     char *id;
-    blueNode *next;
-}
+    struct blueNode *next;
+};
 
 struct greenNode {
     int numParams;
     char *id;
     struct blueNode *firstBlue;
     struct greenNode *prev;
-}
+} *topGreen;
+
+struct errorNode {
+	char *error;
+	int lineOccurred;
+	struct errorNode *next;
+} *firstError;
 
 #endif

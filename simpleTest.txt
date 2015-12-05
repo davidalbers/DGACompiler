@@ -1,4 +1,5 @@
-program testProg (a);
+program testProg (input, output);
+var a : integer;
 begin
-	a := 7
+	a := 7.0
 end .

@@ -33,9 +33,6 @@ struct tokenNode {
 
 extern int errno;
 
-
-
-int tokenizingLine = 0;
 int numberLines = 0;
 char** fileLineByLine;
 
@@ -149,8 +146,8 @@ void loadReservedWords(char *pathToReservedWords) {
 //Return 0 if token or error
 struct token *getNextToken(FILE * listingFile) {
 	fsa.state = 0;
-	if(fsa.f == 0 && tokenizingLine == 0)
-		fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );//print first line
+	//if(fsa.f == 0 && tokenizingLine == 0)
+	//	fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );//print first line
 	if(fsa.f >= MAX_LINE_LENGTH) {
 		fsa.f = 0;
 		tokenizingLine++;
@@ -161,7 +158,7 @@ struct token *getNextToken(FILE * listingFile) {
 			eofToken->tokenName = ENDOFFILE;
 			return eofToken;
 		}
-		fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
+		//fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
 	}
 	int foundToken = 0;
 	while(!foundToken) {
@@ -200,7 +197,7 @@ struct token *getNextToken(FILE * listingFile) {
 						eofToken->tokenName = ENDOFFILE;
 						return eofToken;
 					}
-					fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
+					fprintf(listingFile, "%d:\t%s\n",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
 			
 				}
 				break;
@@ -331,7 +328,8 @@ void idMachine(char *line) {
 					struct token *idToken = malloc(sizeof(struct token));
 					union Attribute *attr = malloc(sizeof(union Attribute));
 			
-					attr->attrInt = (unsigned)addToSymbolTable(id);
+					addToSymbolTable(id);
+					attr->attrString = id;
 					idToken->tokenName = ID;
 					idToken->attribute = attr;
 					fsa.currToken = idToken;
@@ -1152,6 +1150,7 @@ struct node *getSymbol(char* id) {
 			}
 		}
 	}
+	return NULL;
 }
 
 char *tokenNameToString(int tokenName) {
@@ -1333,5 +1332,23 @@ void addToken() {
 		struct tokenNode *newNode = (struct tokenNode *)(malloc(sizeof(struct tokenNode )));
 		newNode->thisToken = fsa.currToken;
 		currNode->next = newNode;
+	}
+}
+
+void appendError(char* error, int lineOccurred) {
+	if(firstError == NULL) {
+		firstError = (struct errorNode *)(malloc(sizeof(struct errorNode)));
+		firstError->error = error;
+		firstError->lineOccurred = lineOccurred;
+	}
+	else {
+		struct errorNode *currError = firstError;
+		while(currError->next != NULL) {
+			currError = currError->next;
+		} 
+		struct errorNode *newError = (struct errorNode *)(malloc(sizeof(struct errorNode)));
+		newError->error = error;
+		newError->lineOccurred = lineOccurred;
+		currError->next = newError;
 	}
 }
