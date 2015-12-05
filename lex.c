@@ -4,19 +4,12 @@
 #include <ctype.h>
 #include "lex.h"
 
-
-
-
-
-
 struct FSA {
 	int f;
 	int b;
 	int state;	
 	struct token *currToken;
 } fsa;
-
-
 
 struct resWordNode{
 	char *id;
@@ -144,10 +137,8 @@ void loadReservedWords(char *pathToReservedWords) {
 	
 //Return 1 at end of line
 //Return 0 if token or error
-struct token *getNextToken(FILE * listingFile) {
+struct token *getNextToken() {
 	fsa.state = 0;
-	//if(fsa.f == 0 && tokenizingLine == 0)
-	//	fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );//print first line
 	if(fsa.f >= MAX_LINE_LENGTH) {
 		fsa.f = 0;
 		tokenizingLine++;
@@ -158,7 +149,6 @@ struct token *getNextToken(FILE * listingFile) {
 			eofToken->tokenName = ENDOFFILE;
 			return eofToken;
 		}
-		//fprintf(listingFile, "%d:\t%s",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
 	}
 	int foundToken = 0;
 	while(!foundToken) {
@@ -196,9 +186,7 @@ struct token *getNextToken(FILE * listingFile) {
 						struct token *eofToken = (struct token *)malloc(sizeof(struct token));
 						eofToken->tokenName = ENDOFFILE;
 						return eofToken;
-					}
-					fprintf(listingFile, "%d:\t%s\n",(tokenizingLine + 1), fileLineByLine[tokenizingLine] );
-			
+					}			
 				}
 				break;
 			case 16:
@@ -240,8 +228,16 @@ struct token *getNextToken(FILE * listingFile) {
 				strncpy(lexeme, fileLineByLine[tokenizingLine]+fsa.b, (fsa.f-fsa.b));
 				
 				fsa.b = fsa.f;
-				if(fsa.currToken->tokenName == LEXERR)
-					fprintf(listingFile, "LEXERR:\t%s:\t'%s'\n", attributeToString(fsa.currToken->attribute->attrInt), lexeme);		
+				//append error if one occurred
+				if(fsa.currToken->tokenName == LEXERR) {
+					char *err = malloc(sizeof(char) * 80);
+					strcpy(err, "LEXERR:\t");
+					strcat(err, attributeToString(fsa.currToken->attribute->attrInt));
+					strcat(err, ":\t'");
+					strcat(err, lexeme);
+					strcat(err, "'\n");
+					appendError(err, tokenizingLine);
+				}
 				return fsa.currToken; //return token
 			default:
 				fsa.f = fsa.b; 
@@ -1350,5 +1346,20 @@ void appendError(char* error, int lineOccurred) {
 		newError->error = error;
 		newError->lineOccurred = lineOccurred;
 		currError->next = newError;
+	}
+}
+
+void printListing(FILE * listingFile) {
+	int printingLine = 0;
+	struct errorNode *currError = firstError;
+	while(printingLine <= numberLines) {
+		fprintf(listingFile, "%d:\t%s",(printingLine + 1), fileLineByLine[printingLine]);
+		if(currError != NULL) {
+			if(currError->lineOccurred == printingLine) {
+				fprintf(listingFile, "%s", currError->error);
+				currError=currError->next;
+			}
+		}
+		printingLine++;
 	}
 }

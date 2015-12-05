@@ -1,9 +1,6 @@
 1:	program testProg (input, output);
 2:	var a : integer;
-
 3:	begin
-
-4:		a := 7.0
-
+4:		a := 7
+SEM ERR: Cannot assign value of type 26 to variable 'a' of type 0.
 5:	end .
-SEM ERR: Cannot assign value of type 40 to variable 'a' of type 0.

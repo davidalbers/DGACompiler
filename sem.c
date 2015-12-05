@@ -59,10 +59,9 @@ int checkAddGreenNode(struct greenNode * newGreen);
 struct greenNode *popGreenNode();
 void pushGreenNode(struct greenNode *newGreen);
 void checkAddType(char *lexeme, int type);
-FILE * listingFile;
 extern int errno;
 int tokenizingLine = 0;
-
+FILE * listingFile;
 int main(int argc, char *argv[]) 
 {
 	if(argc == 2) 
@@ -84,7 +83,7 @@ int main(int argc, char *argv[])
 }
 
 void parse() {
-	tok = getNextToken(listingFile);
+	tok = getNextToken();
 	program();
 	match(ENDOFFILE);
 	//match end of file
@@ -104,11 +103,14 @@ void program() {
 		}
 		struct greenNode *newGreen = (struct greenNode *)malloc(sizeof(struct greenNode));
 		newGreen->id = lexeme;
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
-			puts("failed to add to stack");
-			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newGreen->id);
+			char *err =  malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: identifier with name '");
+			strcat(err, lexeme);
+			strcat(err, "' has already been declared in this scope\n");
+			appendError(err, tokenizingLine);
 		}
 
 		//if(!match(ID)) {synchType(NT_PROGRAM); return;}
@@ -258,13 +260,16 @@ void decls() {
 			newBlue->id = lexeme;
 			int success = checkAddBlueNode(newBlue);
 			if(success == 0) {
-				fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
-				puts("failed to get blue node");
+				char *err =  malloc(sizeof(char) * 80);
+				strcpy(err, "SEM ERR: identifier with name '");
+				strcat(err, newBlue->id);
+				strcat(err, "' has already been declared in this scope\n");
+				appendError(err, tokenizingLine);
 			}
 			else {
 				puts("got blue node");
 			}
-			tok = getNextToken(listingFile);
+			tok = getNextToken();
 			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
 			int tType = type();
@@ -292,13 +297,16 @@ void declsPrime() {
 			newBlue->id = lexeme;
 			int success = checkAddBlueNode(newBlue);
 			if(success == 0) {
-				fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
-				puts("failed to get blue node");
+				char *err =  malloc(sizeof(char) * 80);
+				strcpy(err, "SEM ERR: identifier with name '");
+				strcat(err, newBlue->id);
+				strcat(err, "' has already been declared in this scope\n");
+				appendError(err, tokenizingLine);
 			}
 			else {
 				puts("got blue node");
 			}
-			tok = getNextToken(listingFile);
+			tok = getNextToken();
 			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
 			int tType = type();
@@ -499,12 +507,13 @@ void subPrgHead() {
 		newGreen->id = lexeme;
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
-			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newGreen->id);
-			puts("already declared this");
-			synchType(NT_SUBPRGHEAD);
-			return;
+			char *err =  malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: identifier with name '");
+			strcat(err, newGreen->id);
+			strcat(err, "' has already been declared in this scope\n");
+			appendError(err, tokenizingLine);
 		}
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_SUBPRGHEAD); return;}
 		subPrgHeadPrime();
 	}
@@ -556,13 +565,16 @@ void paramLst() {
 		newBlue->id = lexeme;
 		int success = checkAddBlueNode(newBlue);
 		if(success == 0) {
-			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
-			puts("failed to get blue node");
+			char *err =  malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: identifier with name '");
+			strcat(err, newBlue->id);
+			strcat(err, "' has already been declared in this scope\n");
+			appendError(err, tokenizingLine);
 		}
 		else {
 			puts("got blue node");
 		}
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
 		int tType = type();
@@ -589,13 +601,13 @@ void paramLstPrime() {
 		newBlue->id = lexeme;
 		int success = checkAddBlueNode(newBlue);
 		if(success == 0) {
-			fprintf(listingFile,"SEM ERR: a variable with name '%s' has already been declared in this scope\n", newBlue->id);
-			puts("failed to get blue node");
+			char *err =  malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: identifier with name '");
+			strcat(err, newBlue->id);
+			strcat(err, "' has already been declared in this scope\n");
+			appendError(err, tokenizingLine);
 		}
-		else {
-			puts("got blue node");
-		}
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
 		int tType = type();
@@ -691,12 +703,16 @@ void stmtLstPrime() {
 
 void stmt() {
 	if(tok->tokenName == ID) {
+		//keep track of the line this starts on so you can print an error on that line
+		int currLine = tokenizingLine; 
 		struct varReturn *vType = var();
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
 		int eType = expr();
 		if(eType != ERROR_TYPE && vType->type != ERROR_TYPE) {
 			if(vType->type != eType) {
-				fprintf(listingFile, "SEM ERR: Cannot assign value of type %d to variable '%s' of type %d.\n", eType, vType->lexeme, vType->type);
+				char *err =  malloc(sizeof(char) * 160);
+				snprintf(err, sizeof(char) * 160, "SEM ERR: Cannot assign value of type %d to variable '%s' of type %d.\n", eType, vType->lexeme, vType->type);
+				appendError(err, currLine);
 			}
 		}
 
@@ -708,7 +724,7 @@ void stmt() {
 		if(!match(IF)) {synchType(NT_STMT); return;}
 		int eType = expr();
 		if(eType != BOOL_TYPE) {
-			fprintf(listingFile, "SEM ERR: Expecting bool type in 'if' condition\n");
+			appendError("SEM ERR: Expecting bool type in 'if' condition", tokenizingLine);
 		}
 		if(!match(THEN)) {synchType(NT_STMT); return;}
 		stmt();
@@ -718,7 +734,7 @@ void stmt() {
 		if(!match(WHILE)) {synchType(NT_STMT); return;}
 		int eType = expr();
 		if(eType != BOOL_TYPE) {
-			fprintf(listingFile, "SEM ERR: Expecting bool type in 'while' condition\n");
+			appendError("SEM ERR: Expecting bool type in 'while' condition\n", tokenizingLine);
 		}
 		if(!match(DO)) {synchType(NT_STMT); return;}
 		stmt();
@@ -748,7 +764,11 @@ struct varReturn *var() {
 		char* lexeme = tok->attribute->attrString;
 		int idType = matchId(NT_VAR); 
 		if(idType == ERROR_TYPE) {
-			fprintf(listingFile, "SEM ERR: identifier '%s' has not been declared\n", lexeme);
+			char *err =  malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: identifier '");
+			strcat(err, lexeme);
+			strcat(err, "' has not been declared\n");
+			appendError(err, tokenizingLine);
 		}
 		int vType = varPrime(idType);
 		ret->type = vType;
@@ -973,10 +993,15 @@ int factor() {
 		return fval;
 	}
 	else if(tok->tokenName == ID) {
+		int currLine = tokenizingLine;
 		char *lexeme = tok->attribute->attrString;
 		int idType = matchId(NT_FACTOR);		
 		if(idType == ERROR_TYPE) {
-			fprintf(listingFile, "SEM ERR: identifier '%s' has not been declared\n", lexeme);
+			char *err =  malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: identifier '");
+			strcat(err, lexeme);
+			strcat(err, "' has not been declared\n");
+			appendError(err, currLine);
 		}
 		return factorPrime(idType);
 	}
@@ -1005,7 +1030,7 @@ int matchNum(int nt) {
 	int ret = -1;
 	if(tok->tokenName == NUM) {
 		ret = tok->subName;
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 	}
 	else {
 		synchType(nt);
@@ -1024,7 +1049,7 @@ int matchId(int nt) {
             while(currBlue != NULL) {
                 if(strcmp(currBlue->id, tok->attribute->attrString) == 0) {
                 	puts("found match");
-                    tok = getNextToken(listingFile);
+                    tok = getNextToken();
                     return currBlue->type;
                 }
                 currBlue = currBlue->next;
@@ -1034,7 +1059,7 @@ int matchId(int nt) {
         }
 		//did not find, throw error
 		puts("did not find match");
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 		return ERROR_TYPE;
 	}
 	else {
@@ -1125,7 +1150,7 @@ int match(int type) {
 		type == ENDOFFILE || type == RELOP || type == ADDOP || type == MULOP || type == OPENBRACKET || type == CLOSEBRACKET) {
 		if(type == tok->tokenName && type != ENDOFFILE) {
 			//printf("%s, ", tokenNameToString(type));
-			tok = getNextToken(listingFile);
+			tok = getNextToken();
 			return 1;
 		}
 		else if (type == tok->tokenName && type == ENDOFFILE) {
@@ -1141,7 +1166,7 @@ int match(int type) {
 	else {
 		if(type == tok->attribute->attrInt && type != ENDOFFILE) {
 			//printf("%s, ", attributeToString(type));
-			tok = getNextToken(listingFile);
+			tok = getNextToken();
 			return 1;
 		}
 		else if (type == tok->attribute->attrInt && type == ENDOFFILE) {
@@ -1160,7 +1185,7 @@ void synchType(int syncingType) {
 	printf("syncing %d\n", syncingType);
 	while(!synch(tok,syncingType)) {
 		//printf("syncing %d\n", tok->tokenName);
-		tok = getNextToken(listingFile);
+		tok = getNextToken();
 	}
 	puts("done syncing");	
 }
@@ -1282,7 +1307,13 @@ void printMatchSynerr(char * matchType) {
 	else {
 		tokStr = attributeToString(tok->attribute->attrInt);
 	}
-	fprintf(listingFile, "SYNERR expecting %s, received %s\n", matchType, tokStr);
+	char *err =  malloc(sizeof(char) * 80);
+	strcpy(err, "SYNERR: expecting ");
+	strcat(err, matchType);
+	strcat(err, ", received ");
+	strcat(err, tokStr);
+	strcat(err, "\n");
+	appendError(err, tokenizingLine);
 }
 
 void printSynerr(char * neededTypes, char * nonterminal) {
@@ -1297,7 +1328,9 @@ void printSynerr(char * neededTypes, char * nonterminal) {
 	else {
 		tokStr = attributeToString(tok->attribute->attrInt);
 	}
-	fprintf(listingFile, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
+	char *err =  malloc(sizeof(char) * 80);
+	snprintf(err, sizeof(char) * 80, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
+	appendError(err, tokenizingLine);
 }
 
 struct greenNode *popGreenNode() {
@@ -1382,7 +1415,20 @@ int checkAddBlueNode(struct blueNode *newBlue) {
    return 1;
 }
 
+char * typeToString(int type) {
+	switch(type) {
+		case INT_TYPE:
+		case INTEGER:
+			return "int";
+		case REAL_TYPE:
+		case REAL:
+			return "real";
+		case BOOL_TYPE:
+		case 
+	}
+}
 
 void finish() {
 	puts("program finished");
+	printListing(listingFile);
 }

@@ -97,12 +97,13 @@
 #define ERROR_TYPE -1
 
 extern void loadFiles(char* src);
-extern struct token *getNextToken(FILE * listingFile);
+extern struct token *getNextToken();
 extern char *tokenNameToString(int);
 extern char *attributeToString(int);
 extern struct node *getSymbol(char* id);
 extern void appendError(char* error,int lineOccurred);
 extern int tokenizingLine;
+extern void printListing(FILE * listingFile);
 #ifndef LEX_H
 #define LEX_H
 
@@ -142,7 +143,7 @@ struct greenNode {
 } *topGreen;
 
 struct errorNode {
-	char *error;
+	char * error;
 	int lineOccurred;
 	struct errorNode *next;
 } *firstError;
