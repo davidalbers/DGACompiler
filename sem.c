@@ -148,7 +148,7 @@ void programPrime() {
 			}
 			else {
 				struct blueNode *currBlue = popped->firstBlue;
-				printf("Popped a green node, here are its contents:\n");
+				printf("Popped a green node, here are its contents, name %s:\n", popped->id);
 				while(currBlue != NULL) {
 					printf("%s,%d\n", currBlue->id, currBlue->type);
 					currBlue = currBlue->next;
@@ -166,7 +166,7 @@ void programPrime() {
 			}
 			else {
 				struct blueNode *currBlue = popped2->firstBlue;
-				printf("Popped a green node, here are its contents:\n");
+				printf("Popped a green node, here are its contents, name %s:\n", popped2->id);
 				while(currBlue != NULL) {
 					printf("%s,%d\n", currBlue->id, currBlue->type);
 					currBlue = currBlue->next;
@@ -191,7 +191,7 @@ void programPrime2() {
 			}
 			else {
 				struct blueNode *currBlue = popped->firstBlue;
-				printf("Popped a green node, here are its contents:\n");
+				printf("Popped a green node, here are its contents, name %s:\n", popped->id);
 				while(currBlue != NULL) {
 					printf("%s,%d\n", currBlue->id, currBlue->type);
 					currBlue = currBlue->next;
@@ -209,7 +209,7 @@ void programPrime2() {
 			}
 			else {
 				struct blueNode *currBlue = popped2->firstBlue;
-				printf("Popped a green node, here are its contents:\n");
+				printf("Popped a green node, here are its contents, name %s:\n", popped2->id);
 				while(currBlue != NULL) {
 					printf("%s,%d\n", currBlue->id, currBlue->type);
 					currBlue = currBlue->next;
@@ -368,7 +368,7 @@ int type() {
 		}
 		else {
 			char *err =  malloc(sizeof(char) * 80);
-			snprintf(err, sizeof(char) * 80, "SEM ERR: Cannot create array containing values of type %d\n", typeToString(sType));
+			snprintf(err, sizeof(char) * 80, "SEM ERR: Cannot create array containing values of type %s\n", typeToString(sType));
 			appendError(err, currLine);
 			return ERROR_TYPE;
 		}
@@ -418,7 +418,7 @@ void subPrgDecls() {
 void subPrgDeclsPrime() {
 	if(tok->attribute->attrInt == FUNCTION) {
 		subPrgDecls();
-		if(!match(SEMICOLON)) {synchType(NT_SUBPRGDECLS); return;}
+        if(!match(SEMICOLON)) {puts("messed up subprgdecls'"); synchType(NT_SUBPRGDECLS); return;}
 		struct greenNode *popped = popGreenNode();
 		if(popped == NULL) {
 			puts("Stack is empty");
@@ -426,7 +426,7 @@ void subPrgDeclsPrime() {
 		}
 		else {
 			struct blueNode *currBlue = popped->firstBlue;
-			printf("Popped a green node, here are its contents:\n");
+			printf("Popped a green node, here are its contents, name %s:\n", popped->id);
 			while(currBlue != NULL) {
 				printf("%s,%d\n", currBlue->id, currBlue->type);
 				currBlue = currBlue->next;
@@ -435,14 +435,14 @@ void subPrgDeclsPrime() {
 		subPrgDeclsPrime();
 	}
 	else if(tok->attribute->attrInt == BEGIN){
-		struct greenNode *popped = popGreenNode();
+ 		struct greenNode *popped = popGreenNode();
 		if(popped == NULL) {
 			puts("Stack is empty");
 			return;
 		}
 		else {
 			struct blueNode *currBlue = popped->firstBlue;
-			printf("Popped a green node, here are its contents:\n");
+			printf("Popped a green node, here are its contents, name %s:\n", popped->id);
 			while(currBlue != NULL) {
 				printf("%s,%d\n", currBlue->id, currBlue->type);
 				currBlue = currBlue->next;
@@ -717,7 +717,7 @@ void stmt() {
 		if(eType != ERROR_TYPE && vType->type != ERROR_TYPE) {
 			if(typesEquivalent(vType->type, eType) == 0) {
 				char *err =  malloc(sizeof(char) * 160);
-				snprintf(err, sizeof(char) * 160, "SEM ERR: Cannot assign value of type %s,%d to variable '%s' of type %s,%d.\n", typeToString(eType),eType, vType->lexeme, typeToString(vType->type),vType->type);
+				snprintf(err, sizeof(char) * 160, "SEM ERR: Cannot assign value of type %s,%d to variable of type %s,%d.\n", typeToString(eType),eType, typeToString(vType->type),vType->type);
 				appendError(err, currLine);
 			}
 		}
@@ -819,7 +819,7 @@ int varPrime(int type) {
 		//array indices have to be ints
 		if(eType != INT_TYPE) { 
 			char *err =  malloc(sizeof(char) * 80);
-			snprintf(err, sizeof(char) * 80, "SEM ERR: Array indices are of type int, you're using type %d\n", typeToString(eType));
+			snprintf(err, sizeof(char) * 80, "SEM ERR: Array indices are of type int, you're using type %s\n", typeToString(eType));
 			appendError(err, currLine);
 			return ERROR_TYPE; 
 		}
@@ -828,7 +828,7 @@ int varPrime(int type) {
 		else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE) { return REAL_TYPE; }
 		else { 
 			char *err =  malloc(sizeof(char) * 80);
-			snprintf(err, sizeof(char) * 80, "SEM ERR: Type %d is not an array and is not indexed\n", typeToString(type));
+			snprintf(err, sizeof(char) * 80, "SEM ERR: Type %s is not an array and is not indexed\n", typeToString(type));
 			appendError(err, currLine);
 			return ERROR_TYPE; 
 		}
@@ -923,11 +923,15 @@ int simExp() {
 	}
 	else if(tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT) {
 		sign();
+        int currLine = tokenizingLine;
 		int sType = term();
 		if(sType == INT_TYPE || sType == REAL_TYPE || sType == FP_INT_TYPE || sType == FP_REAL_TYPE) {
 			return simExpPrime(sType);
 		}
 		else {
+            char *err =  malloc(sizeof(char) * 80);
+            snprintf(err, sizeof(char) * 80, "SEM ERR: type %s cannot be signed\n", typeToString(sType));
+            appendError(err, currLine);
 			return ERROR_TYPE;
 		}
 	}
@@ -1175,7 +1179,9 @@ int factorPrime(int type) {
 	else if(tok->tokenName == OPENBRACKET) {
 		//factor->id[exp], if exp is an int and id is an array return type stored in array
 		if(!match(OPENBRACKET)) {synchType(NT_FACTOR); return ERROR_TYPE;}
+        int currLine = tokenizingLine;
 		int eType = expr();
+        
 		if(!match(CLOSEBRACKET)) {synchType(NT_FACTOR); return ERROR_TYPE;}
 		int fType = ERROR_TYPE;
 
@@ -1184,11 +1190,21 @@ int factorPrime(int type) {
 				fType = INT_TYPE;
 			else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE)
 				fType = REAL_TYPE;
-			else //neither int or real array
+            else {
+                //neither int or real array
+                char *err =  malloc(sizeof(char) * 80);
+                snprintf(err, sizeof(char) * 80, "SEM ERR type %s is not an array and is not indexed\n", typeToString(type));
+                appendError(err, currLine);
 				return ERROR_TYPE;
+            }
 		}
-		else //exp is not an int
+        else {
+            //exp is not an int
+            char *err =  malloc(sizeof(char) * 80);
+            snprintf(err, sizeof(char) * 80, "SEM ERR arrays can only be accessed with ints you're using type %s\n", typeToString(eType));
+            appendError(err, currLine);
 			return ERROR_TYPE;
+        }
 		return fType;
 	}
 	else if(tok->tokenName == CLOSEPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||

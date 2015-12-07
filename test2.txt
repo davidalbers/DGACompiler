@@ -1,0 +1,32 @@
+program testProg (a);
+var a : integer;
+    function testSub ( p : integer ): integer ;
+    var b : integer;
+        function inner ( p : integer ): integer ;
+        var c : integer;
+        begin
+            a := 1;
+            b := 2;
+            c := 3;
+            d := 4
+        end;
+        function inner ( p : integer ): integer ;
+        var d : integer;
+        begin
+            a := 1;
+            b := 2;
+            c := 3;
+            d := 4
+        end;
+    begin
+        a := 1;
+        b := 2;
+        c := 3;
+        d := 4
+    end;
+begin
+    a := 1;
+    b := 2;
+    c := 3;
+    d := 4
+end .

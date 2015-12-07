@@ -1,0 +1,12 @@
+program testProg (a);
+    function testSub : integer ;
+        function inner : integer ;
+        begin
+        end;
+        function inner2 : integer ;
+        begin
+        end;
+    begin
+    end;
+begin
+end .
