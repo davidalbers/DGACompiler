@@ -1020,7 +1020,7 @@ void catchAllMachine(char* line) {
 	}
 	//not a single character token? don't know what to do
 	//ignore this char and go back to initial state
-	printf("got unrecognizedd '%d'%d,%d\n", c, fsa.f, tokenizingLine);
+	printf("got unrecognizedd '%c'%d,%d\n", c, fsa.f, tokenizingLine);
 	fsa.state = ENDSTATE;
 	struct token *catchallToken = (struct token *)malloc(sizeof(struct token));
 	union Attribute *catchallAttr = (union Attribute *)malloc(sizeof(union Attribute));

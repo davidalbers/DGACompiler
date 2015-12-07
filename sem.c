@@ -59,6 +59,8 @@ int checkAddGreenNode(struct greenNode * newGreen);
 struct greenNode *popGreenNode();
 void pushGreenNode(struct greenNode *newGreen);
 void checkAddType(char *lexeme, int type);
+char * typeToString(int type);
+int typesEquivalent(int type1, int type2);
 extern int errno;
 int tokenizingLine = 0;
 FILE * listingFile;
@@ -357,10 +359,10 @@ int type() {
 			return ERROR_TYPE;
 		}
 		int sType = stdType();
-		if(sType == INT_TYPE) {
+		if(sType == INTEGER || sType == INT_TYPE || sType == FP_INT_TYPE) {
 			return ARRAY_INT_TYPE;
 		}
-		else if(sType == REAL_TYPE) {
+		else if(sType == REAL || sType == REAL_TYPE || sType == FP_REAL_TYPE) {
 			return ARRAY_REAL_TYPE;
 		}
 		else {
@@ -637,7 +639,7 @@ int typeToFPType(int type) {
 			return FP_REAL_TYPE;
 		default:
 			//err, should not happen
-			return -1;
+			return ERROR_TYPE;
 	}
 }
 
@@ -709,9 +711,11 @@ void stmt() {
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
 		int eType = expr();
 		if(eType != ERROR_TYPE && vType->type != ERROR_TYPE) {
-			if(vType->type != eType) {
+			printf("checking type equivalence of %d&%d=%d\n", vType->type, eType, typesEquivalent(vType->type, eType));
+			if(typesEquivalent(vType->type, eType) == 0) {
+				printf("Types not equivalent in stmt");
 				char *err =  malloc(sizeof(char) * 160);
-				snprintf(err, sizeof(char) * 160, "SEM ERR: Cannot assign value of type %d to variable '%s' of type %d.\n", eType, vType->lexeme, vType->type);
+				snprintf(err, sizeof(char) * 160, "SEM ERR: Cannot assign value of type %s,%d to variable '%s' of type %s,%d.\n", typeToString(eType),eType, vType->lexeme, typeToString(vType->type),vType->type);
 				appendError(err, currLine);
 			}
 		}
@@ -745,6 +749,19 @@ void stmt() {
 	}
 }
 
+int typesEquivalent(int type1, int type2) {
+	if(type1 == INT_TYPE || type1 == FP_INT_TYPE)
+		return (type2 == INT_TYPE || type2 == FP_INT_TYPE);
+	if(type1 == REAL_TYPE || type2 == FP_REAL_TYPE)
+		return (type2 == REAL_TYPE || type2 == FP_REAL_TYPE);
+	if(type1 == BOOL_TYPE || type1 == FP_BOOL_TYPE) 
+		return (type2 == BOOL_TYPE || type2 == FP_BOOL_TYPE); 
+	if(type1 == ARRAY_INT_TYPE || type1 == FP_ARRAY_INT_TYPE)
+		return (type2 == ARRAY_INT_TYPE || type2 == FP_ARRAY_INT_TYPE);
+	if(type1 == ARRAY_REAL_TYPE || type1 == FP_ARRAY_REAL_TYPE)
+		return (type2 == ARRAY_REAL_TYPE || type2 == FP_ARRAY_REAL_TYPE);
+	return 0;
+}
 void stmtPrime() {
 	if(tok->attribute->attrInt == END || tok->tokenName == SEMICOLON) 
 		return;//epsilon
@@ -763,6 +780,7 @@ struct varReturn *var() {
 		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
 		char* lexeme = tok->attribute->attrString;
 		int idType = matchId(NT_VAR); 
+		printf("var got id of type %d\n", idType);
 		if(idType == ERROR_TYPE) {
 			char *err =  malloc(sizeof(char) * 80);
 			strcpy(err, "SEM ERR: identifier '");
@@ -771,6 +789,7 @@ struct varReturn *var() {
 			appendError(err, tokenizingLine);
 		}
 		int vType = varPrime(idType);
+		printf("called var' got type %d\n", vType);
 		ret->type = vType;
 		ret->lexeme = lexeme;
 		return ret;
@@ -796,8 +815,8 @@ int varPrime(int type) {
 		//array indices have to be ints
 		if(eType != INT_TYPE) { return ERROR_TYPE; }
 		//return the type which is being contained in the array
-		if(type == ARRAY_INT_TYPE) { return INT_TYPE; }
-		else if(type == ARRAY_REAL_TYPE) { return REAL_TYPE; }
+		if(type == ARRAY_INT_TYPE || type == FP_ARRAY_INT_TYPE) { return INT_TYPE; }
+		else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE) { return REAL_TYPE; }
 		else { return ERROR_TYPE; }
 	}
 	else if(tok->tokenName == ASSIGNOP) {
@@ -879,7 +898,7 @@ int simExp() {
 	else if(tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT) {
 		sign();
 		int sType = term();
-		if(sType == INT_TYPE || sType == REAL_TYPE) {
+		if(sType == INT_TYPE || sType == REAL_TYPE || sType == FP_INT_TYPE || sType == FP_REAL_TYPE) {
 			return simExpPrime(sType);
 		}
 		else {
@@ -906,20 +925,29 @@ int simExpPrime(int type) {
 			return ERROR_TYPE;
 		}
 		int sType = term();
+		int generatedType = ERROR_TYPE;
 		//make sure only nums are being added or subtracted
 		if(addOp == ADD || addOp == SUBTRACT) {
-			if(!(type == INT_TYPE || type == REAL_TYPE) || 
-				!(sType == INT_TYPE || sType == REAL_TYPE))  {
-				return ERROR_TYPE;
+			if(!(type == INT_TYPE || type == REAL_TYPE || type == FP_INT_TYPE || type == FP_REAL_TYPE) || 
+				!(sType == INT_TYPE || sType == REAL_TYPE || sType == FP_INT_TYPE || sType == FP_REAL_TYPE))  {
+				generatedType = ERROR_TYPE;
+			} 
+			else{
+				if(sType == REAL_TYPE || sType == FP_REAL_TYPE || type == REAL_TYPE || type == FP_REAL_TYPE)
+					generatedType = REAL_TYPE; //any type real? total expr becomes real
+				else
+					generatedType = INT_TYPE; //else stays int
 			}
 		}
 		//make sure only bools are being OR'd
 		if(addOp == OR) {
 			if(type != BOOL_TYPE || sType != BOOL_TYPE) {
-				return ERROR_TYPE;
+				generatedType = ERROR_TYPE;
 			}
+			generatedType = BOOL_TYPE;
 		}
-		return simExpPrime(sType);
+
+		return simExpPrime(generatedType);
 	}
 	else {
 		printSynerr("addop, open paren, id, num, plus, minus, not", "simple_expression'");
@@ -953,25 +981,29 @@ int termPrime(int termPIn) {
 			return ERROR_TYPE;
 		}
 		int fType = factor(termPIn);
-		int generatedType = -1;
+		int generatedType = ERROR_TYPE;
 		if(mulop == MULTIPLY || mulop == DIVIDE) {
-			if(!(termPIn == INT_TYPE || termPIn == REAL_TYPE) || 
-				!(fType == INT_TYPE || fType == REAL_TYPE)) {
-				return ERROR_TYPE;
+			if(!(termPIn == INT_TYPE || termPIn == REAL_TYPE || termPIn == FP_INT_TYPE || termPIn == FP_REAL_TYPE) || 
+				!(fType == INT_TYPE || fType == REAL_TYPE || fType == FP_INT_TYPE || fType == FP_REAL_TYPE)) {
+				generatedType = ERROR_TYPE;
+			} 
+			else {
+				if(fType == REAL_TYPE || fType == FP_REAL_TYPE || termPIn == REAL_TYPE || termPIn == FP_REAL_TYPE)
+					generatedType = REAL_TYPE; //any type real? total expr becomes real
+				else
+					generatedType = INT_TYPE; //else stays int
 			}
-			else 
-				generatedType = REAL_TYPE;
 		}
 		if(mulop == DIV || mulop == MOD) {
-			if(termPIn != INT_TYPE || fType != INT_TYPE) {
-				return ERROR_TYPE;
+			if(termPIn != INT_TYPE || fType != INT_TYPE || termPIn != FP_INT_TYPE || fType != FP_INT_TYPE) {
+				generatedType = ERROR_TYPE;
 			}
 			else 
 				generatedType = INT_TYPE;
 		}
 		if(mulop == AND) {
-			if(termPIn != BOOL_TYPE || fType != BOOL_TYPE) {
-				return ERROR_TYPE;
+			if(termPIn != BOOL_TYPE || fType != BOOL_TYPE|| termPIn != FP_BOOL_TYPE || fType != FP_BOOL_TYPE) {
+				generatedType = ERROR_TYPE;
 			}
 			else
 				generatedType = BOOL_TYPE;
@@ -1006,6 +1038,7 @@ int factor() {
 		return factorPrime(idType);
 	}
 	else if(tok->tokenName == NUM) {
+
 		int fval = matchNum(NT_FACTOR);
 		return fval;
 		
@@ -1027,10 +1060,15 @@ int factor() {
 }
 
 int matchNum(int nt) {
-	int ret = -1;
+	int ret = ERROR_TYPE;
 	if(tok->tokenName == NUM) {
 		ret = tok->subName;
 		tok = getNextToken();
+		if(ret == REAL)
+			return REAL_TYPE;
+		else if(ret == INTEGER)
+			return INT_TYPE;
+		return ret;
 	}
 	else {
 		synchType(nt);
@@ -1040,7 +1078,6 @@ int matchNum(int nt) {
 }
 
 int matchId(int nt) {
-	puts("attempting to match id");
 	if(tok->tokenName == ID) {
 		struct greenNode *currGreen = topGreen;
         while(currGreen != NULL) {
@@ -1048,7 +1085,6 @@ int matchId(int nt) {
             //check matching blue
             while(currBlue != NULL) {
                 if(strcmp(currBlue->id, tok->attribute->attrString) == 0) {
-                	puts("found match");
                     tok = getNextToken();
                     return currBlue->type;
                 }
@@ -1058,7 +1094,6 @@ int matchId(int nt) {
             currGreen = currGreen->prev;
         }
 		//did not find, throw error
-		puts("did not find match");
 		tok = getNextToken();
 		return ERROR_TYPE;
 	}
@@ -1083,10 +1118,10 @@ int factorPrime(int type) {
 		if(!match(CLOSEBRACKET)) {synchType(NT_FACTOR); return ERROR_TYPE;}
 		int fType = ERROR_TYPE;
 
-		if(eType == INT_TYPE) {
-			if(type == ARRAY_INT_TYPE) 
+		if(eType == INT_TYPE || eType == FP_INT_TYPE) {
+			if(type == ARRAY_INT_TYPE || type == FP_ARRAY_INT_TYPE) 
 				fType = INT_TYPE;
-			else if(type == ARRAY_REAL_TYPE)
+			else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE)
 				fType = REAL_TYPE;
 			else //neither int or real array
 				return ERROR_TYPE;
@@ -1097,7 +1132,7 @@ int factorPrime(int type) {
 	}
 	else if(tok->tokenName == CLOSEPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 		tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
-		tok->attribute->attrInt == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP) {
+		tok->tokenName == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP || tok->tokenName == SEMICOLON) {
 		return type;//epsilon
 	}
 	else {
@@ -1134,7 +1169,7 @@ void checkAddType(char *lexeme, int type) {
 	    struct blueNode *currBlue = topGreen->firstBlue;
 	    //check matching blue
 	    while(currBlue != NULL) {
-	        if(strcmp(currBlue->id, topGreen->id) == 0) {
+	        if(strcmp(currBlue->id, lexeme) == 0) {
 	            currBlue->type = type;
 	            break;
 	        }
@@ -1182,12 +1217,11 @@ int match(int type) {
 	return 0;
 }
 void synchType(int syncingType) {
-	printf("syncing %d\n", syncingType);
+	//printf("syncing %d\n", syncingType);
 	while(!synch(tok,syncingType)) {
 		//printf("syncing %d\n", tok->tokenName);
 		tok = getNextToken();
 	}
-	puts("done syncing");	
 }
 
 int synch(struct token * tok, int syncingType) {
@@ -1328,8 +1362,8 @@ void printSynerr(char * neededTypes, char * nonterminal) {
 	else {
 		tokStr = attributeToString(tok->attribute->attrInt);
 	}
-	char *err =  malloc(sizeof(char) * 80);
-	snprintf(err, sizeof(char) * 80, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
+	char *err =  malloc(sizeof(char) * 240);
+	snprintf(err, sizeof(char) * 240, "SYNERR in %s, expecting %s, received %s\n", nonterminal, neededTypes, tokStr);
 	appendError(err, tokenizingLine);
 }
 
@@ -1419,14 +1453,30 @@ char * typeToString(int type) {
 	switch(type) {
 		case INT_TYPE:
 		case INTEGER:
+		case FP_INT_TYPE:
 			return "int";
 		case REAL_TYPE:
 		case REAL:
+		case FP_REAL_TYPE:
 			return "real";
 		case BOOL_TYPE:
-		case 
+		case FP_BOOL_TYPE:
+			return "bool";
+		case ARRAY_INT_TYPE:
+		case FP_ARRAY_INT_TYPE:
+			return "int array";
+		case ARRAY_BOOL_TYPE:
+			return "bool array";
+		case ARRAY_REAL_TYPE:
+		case FP_ARRAY_REAL_TYPE:
+			return "real array";
+		case ERROR_TYPE:
+			return "error";
+		default:
+			return "undefined";
 	}
 }
+
 
 void finish() {
 	puts("program finished");

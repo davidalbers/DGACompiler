@@ -83,7 +83,7 @@
 #define NT_FACTOR 20
 #define NT_SIGN 21
 //types
-#define INT_TYPE 0
+#define INT_TYPE 11
 #define BOOL_TYPE 1
 #define ARRAY_INT_TYPE 2
 #define ARRAY_BOOL_TYPE 3
@@ -94,7 +94,7 @@
 #define FP_ARRAY_INT_TYPE 8
 #define FP_REAL_TYPE 9
 #define FP_ARRAY_REAL_TYPE 10
-#define ERROR_TYPE -1
+#define ERROR_TYPE 0
 
 extern void loadFiles(char* src);
 extern struct token *getNextToken();

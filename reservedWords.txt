@@ -7,10 +7,10 @@ end 0 29
 then 0 30
 if 0 31
 else 0 32
-mod 34 21
-or 33 17
-div 34 20
-and 34 22
+mod 54 21
+or 53 17
+div 54 20
+and 54 22
 array 0 34
 of 0 35
 while 0 36
