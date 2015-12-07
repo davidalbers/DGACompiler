@@ -1355,7 +1355,7 @@ void printListing(FILE * listingFile) {
 	while(printingLine <= numberLines) {
 		fprintf(listingFile, "%d:\t%s",(printingLine + 1), fileLineByLine[printingLine]);
 		if(currError != NULL) {
-			if(currError->lineOccurred == printingLine) {
+			while(currError != NULL && currError->lineOccurred == printingLine) {
 				fprintf(listingFile, "%s", currError->error);
 				currError=currError->next;
 			}

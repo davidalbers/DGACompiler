@@ -64,7 +64,7 @@ function testSub ( p : integer; q : real;
 		c := p / p;
 		c := p / 2.0;
 		c := 2.0 / p;
-
+		b := c - 2;
 		b := 2 or 2;
 		b := 2 or 2.0;
 		b := 2.0 or 2;
@@ -470,138 +470,6 @@ function testSub ( p : integer; q : real;
 		c := b div b;
 		c := b div 2.0;
 		c := 2.0 div b;
-
-		while((b >= c) and (c > b) or (c < 1) or (b > 2.0) or (c < 1.0)) do
-			b := 1;
-		if((c >= b) and (2 > b) or (1 < c) or (2.0 > b) or (1.0 < c)) then
-			b := 1;
-			
-		if((a > q) and (a > r) and (b > q) and (b > r)) then
-			b := 1;
-		if((q > a) or (r > a) or (q > b) or (r > b)) then
-			b := 1;
-
-		b := d[0];
-		b := d[0+1];
-		b := d[b];
-		b := d[c];
-		b := d[p];
-		b := d[q];
-		b := d[d];
-
-		c := d[0];
-		c := d[0+1];
-		c := d[c];
-		c := d[c];
-		c := d[p];
-		c := d[q];
-		c := d[d];
-
-		b := e[0];
-		b := e[0+1];
-		b := e[b];
-		b := e[c];
-		b := e[p];
-		b := e[q];
-		b := e[e];
-
-		c := e[0];
-		c := e[0+1];
-		c := e[c];
-		c := e[c];
-		c := e[p];
-		c := e[q];
-		c := e[e];
-
-		b := r[0];
-		b := r[0+1];
-		b := r[b];
-		b := r[c];
-		b := r[p];
-		b := r[q];
-		b := r[r];
-
-		c := r[0];
-		c := r[0+1];
-		c := r[c];
-		c := r[c];
-		c := r[p];
-		c := r[q];
-		c := r[r];
-
-		b := e[0];
-		b := e[0+1];
-		b := e[b];
-		b := e[c];
-		b := e[p];
-		b := e[q];
-		b := e[e];
-
-		c := e[0];
-		c := e[0+1];
-		c := e[c];
-		c := e[c];
-		c := e[p];
-		c := e[q];
-		c := e[e];
-
-		s[0] = 1;
-		s[0] = 1.0;
-		s[0] = 1+1;
-		s[0] = 1+1.0;
-		s[0] = b;
-		s[0] = c;
-		s[0] = d; 
-		s[0] = e;
-		s[0] = p;
-		s[0] = r;
-		s[0] = s;
-		s[0] = q;
-		s[0] = 1>9;
-
-
-		r[0] = 1;
-		r[0] = 1.0;
-		r[0] = 1+1;
-		r[0] = 1+1.0;
-		r[0] = b;
-		r[0] = c;
-		r[0] = d; 
-		r[0] = e;
-		r[0] = p;
-		r[0] = r;
-		r[0] = r;
-		r[0] = q;
-		r[0] = 1>9;
-
-		d[0] = 1;
-		d[0] = 1.0;
-		d[0] = 1+1;
-		d[0] = 1+1.0;
-		d[0] = b;
-		d[0] = c;
-		d[0] = d; 
-		d[0] = e;
-		d[0] = p;
-		d[0] = r;
-		d[0] = d;
-		d[0] = q;
-		d[0] = 1>9;
-
-		
-		e[0] = 1;
-		e[0] = 1.0;
-		e[0] = 1+1;
-		e[0] = 1+1.0;
-		e[0] = b;
-		e[0] = c;
-		e[0] = d; 
-		e[0] = e;
-		e[0] = p;
-		e[0] = e;
-		e[0] = e;
-		e[0] = q;
-		e[0] = 1>9
 
 	end;	
 begin

@@ -94,119 +94,171 @@ SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 66:			c := 2.0 / p;
 67:	
 68:			b := 2 or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type int
 69:			b := 2 or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type real
 70:			b := 2.0 or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type int
 71:			b := 2.0 or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type real
 72:			c := 2 or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type int
 73:			c := 2 or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type real
 74:			c := 2.0 or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type real to type int
 75:			c := 2.0 or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type real to type real
 76:			b := q or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type int
 77:			b := 2 or q;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type real
 78:			b := q or q;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type real
 79:			b := q or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type real
 80:			b := 2.0 or q;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type real
 81:			b := p or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type int
 82:			b := 2 or p;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type int
 83:			b := p or p;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type int
 84:			b := p or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type int to type real
 85:			b := 2.0 or p;
-SEM ERR: Cannot assign value of type bool,1 to variable 'b' of type int,11.
+SEM ERR: cannot or type real to type int
 86:			c := q or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type real to type int
 87:			c := 2 or q;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type real
 88:			c := q or q;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type real to type real
 89:			c := q or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type real to type real
 90:			c := 2.0 or q;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type real to type real
 91:			c := p or 2;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type int
 92:			c := 2 or p;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type int
 93:			c := p or p;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type int
 94:			c := p or 2.0;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
+SEM ERR: cannot or type int to type real
 95:			c := 2.0 or p;
-SEM ERR: Cannot assign value of type bool,1 to variable 'c' of type real,4.
-96:	
+SEM ERR: cannot or type real to type int
+96:				
 97:			b := 2 mod 2;
 98:			b := 2 mod 2.0;
+SEM ERR: cannot mod type int to type real
 99:			b := 2.0 mod 2;
+SEM ERR: cannot mod type real to type int
 100:			b := 2.0 mod 2.0;
+SEM ERR: cannot mod type real to type real
 101:			c := 2 mod 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 102:			c := 2 mod 2.0;
+SEM ERR: cannot mod type int to type real
 103:			c := 2.0 mod 2;
+SEM ERR: cannot mod type real to type int
 104:			c := 2.0 mod 2.0;
+SEM ERR: cannot mod type real to type real
 105:			b := q mod 2;
+SEM ERR: cannot mod type real to type int
 106:			b := 2 mod q;
+SEM ERR: cannot mod type int to type real
 107:			b := q mod q;
+SEM ERR: cannot mod type real to type real
 108:			b := q mod 2.0;
+SEM ERR: cannot mod type real to type real
 109:			b := 2.0 mod q;
+SEM ERR: cannot mod type real to type real
 110:			b := p mod 2;
 111:			b := 2 mod p;
 112:			b := p mod p;
 113:			b := p mod 2.0;
+SEM ERR: cannot mod type int to type real
 114:			b := 2.0 mod p;
+SEM ERR: cannot mod type real to type int
 115:			c := q mod 2;
+SEM ERR: cannot mod type real to type int
 116:			c := 2 mod q;
+SEM ERR: cannot mod type int to type real
 117:			c := q mod q;
+SEM ERR: cannot mod type real to type real
 118:			c := q mod 2.0;
+SEM ERR: cannot mod type real to type real
 119:			c := 2.0 mod q;
+SEM ERR: cannot mod type real to type real
 120:			c := p mod 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 121:			c := 2 mod p;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 122:			c := p mod p;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 123:			c := p mod 2.0;
+SEM ERR: cannot mod type int to type real
 124:			c := 2.0 mod p;
+SEM ERR: cannot mod type real to type int
 125:	
 126:			b := 2 and 2;
+SEM ERR: cannot and type int to type int
 127:			b := 2 and 2.0;
+SEM ERR: cannot and type int to type real
 128:			b := 2.0 and 2;
+SEM ERR: cannot and type real to type int
 129:			b := 2.0 and 2.0;
+SEM ERR: cannot and type real to type real
 130:			c := 2 and 2;
+SEM ERR: cannot and type int to type int
 131:			c := 2 and 2.0;
+SEM ERR: cannot and type int to type real
 132:			c := 2.0 and 2;
+SEM ERR: cannot and type real to type int
 133:			c := 2.0 and 2.0;
+SEM ERR: cannot and type real to type real
 134:			b := q and 2;
+SEM ERR: cannot and type real to type int
 135:			b := 2 and q;
+SEM ERR: cannot and type int to type real
 136:			b := q and q;
+SEM ERR: cannot and type real to type real
 137:			b := q and 2.0;
+SEM ERR: cannot and type real to type real
 138:			b := 2.0 and q;
+SEM ERR: cannot and type real to type real
 139:			b := p and 2;
+SEM ERR: cannot and type int to type int
 140:			b := 2 and p;
+SEM ERR: cannot and type int to type int
 141:			b := p and p;
+SEM ERR: cannot and type int to type int
 142:			b := p and 2.0;
+SEM ERR: cannot and type int to type real
 143:			b := 2.0 and p;
+SEM ERR: cannot and type real to type int
 144:			c := q and 2;
+SEM ERR: cannot and type real to type int
 145:			c := 2 and q;
+SEM ERR: cannot and type int to type real
 146:			c := q and q;
+SEM ERR: cannot and type real to type real
 147:			c := q and 2.0;
+SEM ERR: cannot and type real to type real
 148:			c := 2.0 and q;
+SEM ERR: cannot and type real to type real
 149:			c := p and 2;
+SEM ERR: cannot and type int to type int
 150:			c := 2 and p;
+SEM ERR: cannot and type int to type int
 151:			c := p and p;
+SEM ERR: cannot and type int to type int
 152:			c := p and 2.0;
+SEM ERR: cannot and type int to type real
 153:			c := 2.0 and p;
+SEM ERR: cannot and type real to type int
 154:	
 155:			b := 2 + 2;
 156:			b := 2 + 2.0;
@@ -296,32 +348,56 @@ SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 212:	
 213:			b := 2 div 2;
 214:			b := 2 div 2.0;
+SEM ERR: cannot div type int to type real
 215:			b := 2.0 div 2;
+SEM ERR: cannot div type real to type int
 216:			b := 2.0 div 2.0;
+SEM ERR: cannot div type real to type real
 217:			c := 2 div 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 218:			c := 2 div 2.0;
+SEM ERR: cannot div type int to type real
 219:			c := 2.0 div 2;
+SEM ERR: cannot div type real to type int
 220:			c := 2.0 div 2.0;
+SEM ERR: cannot div type real to type real
 221:			b := q div 2;
+SEM ERR: cannot div type real to type int
 222:			b := 2 div q;
+SEM ERR: cannot div type int to type real
 223:			b := q div q;
+SEM ERR: cannot div type real to type real
 224:			b := q div 2.0;
+SEM ERR: cannot div type real to type real
 225:			b := 2.0 div q;
+SEM ERR: cannot div type real to type real
 226:			b := p div 2;
 227:			b := 2 div p;
 228:			b := p div p;
 229:			b := p div 2.0;
+SEM ERR: cannot div type int to type real
 230:			b := 2.0 div p;
+SEM ERR: cannot div type real to type int
 231:			c := q div 2;
+SEM ERR: cannot div type real to type int
 232:			c := 2 div q;
+SEM ERR: cannot div type int to type real
 233:			c := q div q;
+SEM ERR: cannot div type real to type real
 234:			c := q div 2.0;
+SEM ERR: cannot div type real to type real
 235:			c := 2.0 div q;
+SEM ERR: cannot div type real to type real
 236:			c := p div 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 237:			c := 2 div p;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 238:			c := p div p;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 239:			c := p div 2.0;
+SEM ERR: cannot div type int to type real
 240:			c := 2.0 div p;
+SEM ERR: cannot div type real to type int
 241:	
 242:			b := 2 * 2;
 243:			b := 2 * 2.0;
@@ -409,120 +485,172 @@ SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 297:			c := b / 2.0;
 298:			c := 2.0 / b;
 299:	
-300:			b := 2 oc 2;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-301:			b := 2 oc 2.0;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-302:			b := 2.0 oc 2;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-303:			b := 2.0 oc 2.0;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-304:			c := 2 oc 2;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-305:			c := 2 oc 2.0;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-306:			c := 2.0 oc 2;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-307:			c := 2.0 oc 2.0;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-308:			b := c oc 2;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-309:			b := 2 oc c;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-310:			b := c oc c;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-311:			b := c oc 2.0;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-312:			b := 2.0 oc c;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-313:			b := b oc 2;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-314:			b := 2 oc b;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-315:			b := b oc b;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-316:			b := b oc 2.0;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-317:			b := 2.0 oc b;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-318:			c := c oc 2;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-319:			c := 2 oc c;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-320:			c := c oc c;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-321:			c := c oc 2.0;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-322:			c := 2.0 oc c;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-323:			c := b oc 2;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-324:			c := 2 oc b;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
-325:			c := b oc b;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-326:			c := b oc 2.0;
-SYNERR in factor', expecting open paren, open bracket, close paren, end, close bracket, then, do, addop, mulop, comma, else, relop, received Id
-327:			c := 2.0 oc b;
-SYNERR in term', expecting mulop, close paren, relop, semicolon, close bracket, then, do, addop, comma, else, end, received Id
+300:			b := 2 or 2;
+SEM ERR: cannot or type int to type int
+301:			b := 2 or 2.0;
+SEM ERR: cannot or type int to type real
+302:			b := 2.0 or 2;
+SEM ERR: cannot or type real to type int
+303:			b := 2.0 or 2.0;
+SEM ERR: cannot or type real to type real
+304:			c := 2 or 2;
+SEM ERR: cannot or type int to type int
+305:			c := 2 or 2.0;
+SEM ERR: cannot or type int to type real
+306:			c := 2.0 or 2;
+SEM ERR: cannot or type real to type int
+307:			c := 2.0 or 2.0;
+SEM ERR: cannot or type real to type real
+308:			b := c or 2;
+SEM ERR: cannot or type real to type int
+309:			b := 2 or c;
+SEM ERR: cannot or type int to type real
+310:			b := c or c;
+SEM ERR: cannot or type real to type real
+311:			b := c or 2.0;
+SEM ERR: cannot or type real to type real
+312:			b := 2.0 or c;
+SEM ERR: cannot or type real to type real
+313:			b := b or 2;
+SEM ERR: cannot or type int to type int
+314:			b := 2 or b;
+SEM ERR: cannot or type int to type int
+315:			b := b or b;
+SEM ERR: cannot or type int to type int
+316:			b := b or 2.0;
+SEM ERR: cannot or type int to type real
+317:			b := 2.0 or b;
+SEM ERR: cannot or type real to type int
+318:			c := c or 2;
+SEM ERR: cannot or type real to type int
+319:			c := 2 or c;
+SEM ERR: cannot or type int to type real
+320:			c := c or c;
+SEM ERR: cannot or type real to type real
+321:			c := c or 2.0;
+SEM ERR: cannot or type real to type real
+322:			c := 2.0 or c;
+SEM ERR: cannot or type real to type real
+323:			c := b or 2;
+SEM ERR: cannot or type int to type int
+324:			c := 2 or b;
+SEM ERR: cannot or type int to type int
+325:			c := b or b;
+SEM ERR: cannot or type int to type int
+326:			c := b or 2.0;
+SEM ERR: cannot or type int to type real
+327:			c := 2.0 or b;
+SEM ERR: cannot or type real to type int
 328:	
 329:			b := 2 mod 2;
 330:			b := 2 mod 2.0;
+SEM ERR: cannot mod type int to type real
 331:			b := 2.0 mod 2;
+SEM ERR: cannot mod type real to type int
 332:			b := 2.0 mod 2.0;
+SEM ERR: cannot mod type real to type real
 333:			c := 2 mod 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 334:			c := 2 mod 2.0;
+SEM ERR: cannot mod type int to type real
 335:			c := 2.0 mod 2;
+SEM ERR: cannot mod type real to type int
 336:			c := 2.0 mod 2.0;
+SEM ERR: cannot mod type real to type real
 337:			b := c mod 2;
+SEM ERR: cannot mod type real to type int
 338:			b := 2 mod c;
+SEM ERR: cannot mod type int to type real
 339:			b := c mod c;
+SEM ERR: cannot mod type real to type real
 340:			b := c mod 2.0;
+SEM ERR: cannot mod type real to type real
 341:			b := 2.0 mod c;
+SEM ERR: cannot mod type real to type real
 342:			b := b mod 2;
 343:			b := 2 mod b;
 344:			b := b mod b;
 345:			b := b mod 2.0;
+SEM ERR: cannot mod type int to type real
 346:			b := 2.0 mod b;
+SEM ERR: cannot mod type real to type int
 347:			c := c mod 2;
+SEM ERR: cannot mod type real to type int
 348:			c := 2 mod c;
+SEM ERR: cannot mod type int to type real
 349:			c := c mod c;
+SEM ERR: cannot mod type real to type real
 350:			c := c mod 2.0;
+SEM ERR: cannot mod type real to type real
 351:			c := 2.0 mod c;
+SEM ERR: cannot mod type real to type real
 352:			c := b mod 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 353:			c := 2 mod b;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 354:			c := b mod b;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 355:			c := b mod 2.0;
+SEM ERR: cannot mod type int to type real
 356:			c := 2.0 mod b;
+SEM ERR: cannot mod type real to type int
 357:	
 358:			b := 2 and 2;
+SEM ERR: cannot and type int to type int
 359:			b := 2 and 2.0;
+SEM ERR: cannot and type int to type real
 360:			b := 2.0 and 2;
+SEM ERR: cannot and type real to type int
 361:			b := 2.0 and 2.0;
+SEM ERR: cannot and type real to type real
 362:			c := 2 and 2;
+SEM ERR: cannot and type int to type int
 363:			c := 2 and 2.0;
+SEM ERR: cannot and type int to type real
 364:			c := 2.0 and 2;
+SEM ERR: cannot and type real to type int
 365:			c := 2.0 and 2.0;
+SEM ERR: cannot and type real to type real
 366:			b := c and 2;
+SEM ERR: cannot and type real to type int
 367:			b := 2 and c;
+SEM ERR: cannot and type int to type real
 368:			b := c and c;
+SEM ERR: cannot and type real to type real
 369:			b := c and 2.0;
+SEM ERR: cannot and type real to type real
 370:			b := 2.0 and c;
+SEM ERR: cannot and type real to type real
 371:			b := b and 2;
+SEM ERR: cannot and type int to type int
 372:			b := 2 and b;
+SEM ERR: cannot and type int to type int
 373:			b := b and b;
+SEM ERR: cannot and type int to type int
 374:			b := b and 2.0;
+SEM ERR: cannot and type int to type real
 375:			b := 2.0 and b;
+SEM ERR: cannot and type real to type int
 376:			c := c and 2;
+SEM ERR: cannot and type real to type int
 377:			c := 2 and c;
+SEM ERR: cannot and type int to type real
 378:			c := c and c;
+SEM ERR: cannot and type real to type real
 379:			c := c and 2.0;
+SEM ERR: cannot and type real to type real
 380:			c := 2.0 and c;
+SEM ERR: cannot and type real to type real
 381:			c := b and 2;
+SEM ERR: cannot and type int to type int
 382:			c := 2 and b;
+SEM ERR: cannot and type int to type int
 383:			c := b and b;
+SEM ERR: cannot and type int to type int
 384:			c := b and 2.0;
+SEM ERR: cannot and type int to type real
 385:			c := 2.0 and b;
+SEM ERR: cannot and type real to type int
 386:	
 387:			b := 2 + 2;
 388:			b := 2 + 2.0;
@@ -612,170 +740,264 @@ SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 444:	
 445:			b := 2 div 2;
 446:			b := 2 div 2.0;
+SEM ERR: cannot div type int to type real
 447:			b := 2.0 div 2;
+SEM ERR: cannot div type real to type int
 448:			b := 2.0 div 2.0;
+SEM ERR: cannot div type real to type real
 449:			c := 2 div 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 450:			c := 2 div 2.0;
+SEM ERR: cannot div type int to type real
 451:			c := 2.0 div 2;
+SEM ERR: cannot div type real to type int
 452:			c := 2.0 div 2.0;
+SEM ERR: cannot div type real to type real
 453:			b := c div 2;
+SEM ERR: cannot div type real to type int
 454:			b := 2 div c;
+SEM ERR: cannot div type int to type real
 455:			b := c div c;
+SEM ERR: cannot div type real to type real
 456:			b := c div 2.0;
+SEM ERR: cannot div type real to type real
 457:			b := 2.0 div c;
+SEM ERR: cannot div type real to type real
 458:			b := b div 2;
 459:			b := 2 div b;
 460:			b := b div b;
 461:			b := b div 2.0;
+SEM ERR: cannot div type int to type real
 462:			b := 2.0 div b;
+SEM ERR: cannot div type real to type int
 463:			c := c div 2;
+SEM ERR: cannot div type real to type int
 464:			c := 2 div c;
+SEM ERR: cannot div type int to type real
 465:			c := c div c;
+SEM ERR: cannot div type real to type real
 466:			c := c div 2.0;
+SEM ERR: cannot div type real to type real
 467:			c := 2.0 div c;
+SEM ERR: cannot div type real to type real
 468:			c := b div 2;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 469:			c := 2 div b;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 470:			c := b div b;
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
 471:			c := b div 2.0;
+SEM ERR: cannot div type int to type real
 472:			c := 2.0 div b;
+SEM ERR: cannot div type real to type int
 473:	
-474:			while(b >= c and b > 2 or c < 1 or b > 2.0 or c < 1.0) do
-SYNERR: expecting close paren, received relop
-475:				c := 1;
-476:			if(c >= b and 2 > b or 1 < c or 2.0 > b or 1.0 < c) do
-477:				c := 1;
-478:			if(r > q or 2 > q or 2.0 > q or 2 > r or 2.0 > r) do
-479:				c := 1;
-480:			if(a > q or a > r or b > q or b > r) do
-481:				c := 1;
-482:			if(q > a or r > a or q > b or r > b) do
-483:				c := 1;
-484:	
-485:			b := d[0];
-486:			b := d[0+1];
-487:			b := d[b];
-488:			b := d[c];
-489:			b := d[p];
-490:			b := d[q];
-491:			b := d[d];
-492:	
-493:			c := d[0];
-494:			c := d[0+1];
+474:			while((b >= c) and (c > b) or (c < 1) or (b > 2.0) or (c < 1.0)) do
+475:				b := 1;
+476:			if((c >= b) and (2 > b) or (1 < c) or (2.0 > b) or (1.0 < c)) then
+477:				b := 1;
+478:				
+479:			if((a > q) and (a > r) and (b > q) and (b > r)) then
+SEM ERR: cannot apply relation operators to type int array
+SEM ERR: cannot apply relation operators to type int array
+480:				b := 1;
+481:			if((q > a) or (r > a) or (q > b) or (r > b)) then
+SEM ERR: cannot apply relation operators to type int array
+SEM ERR: cannot apply relation operators to type int array
+482:				b := 1;
+483:			//these dont work
+484:			b := d[0];
+485:			b := d[0+1];
+486:			b := d[b];
+487:			b := d[c];
+488:			b := d[p];
+489:			b := d[q];
+490:			b := d[d];
+491:	
+492:			c := d[0];
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
+493:			c := d[0+1];
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
+494:			c := d[c];
 495:			c := d[c];
-496:			c := d[c];
-497:			c := d[p];
-498:			c := d[q];
-499:			c := d[d];
-500:	
-501:			b := e[0];
-502:			b := e[0+1];
-503:			b := e[b];
-504:			b := e[c];
-505:			b := e[p];
-506:			b := e[q];
-507:			b := e[e];
-508:	
-509:			c := e[0];
-510:			c := e[0+1];
+496:			c := d[p];
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
+497:			c := d[q];
+498:			c := d[d];
+499:	
+500:			b := e[0];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+501:			b := e[0+1];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+502:			b := e[b];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+503:			b := e[c];
+504:			b := e[p];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+505:			b := e[q];
+506:			b := e[e];
+507:	
+508:			c := e[0];
+509:			c := e[0+1];
+510:			c := e[c];
 511:			c := e[c];
-512:			c := e[c];
-513:			c := e[p];
-514:			c := e[q];
-515:			c := e[e];
-516:	
-517:			b := r[0];
-518:			b := r[0+1];
-519:			b := r[b];
-520:			b := r[c];
-521:			b := r[p];
-522:			b := r[q];
-523:			b := r[r];
-524:	
-525:			c := r[0];
-526:			c := r[0+1];
+512:			c := e[p];
+513:			c := e[q];
+514:			c := e[e];
+515:	
+516:			b := r[0];
+517:			b := r[0+1];
+518:			b := r[b];
+519:			b := r[c];
+520:			b := r[p];
+521:			b := r[q];
+522:			b := r[r];
+523:	
+524:			c := r[0];
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
+525:			c := r[0+1];
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
+526:			c := r[c];
 527:			c := r[c];
-528:			c := r[c];
-529:			c := r[p];
-530:			c := r[q];
-531:			c := r[r];
-532:	
-533:			b := e[0];
-534:			b := e[0+1];
-535:			b := e[b];
-536:			b := e[c];
-537:			b := e[p];
-538:			b := e[q];
-539:			b := e[e];
-540:	
-541:			c := e[0];
-542:			c := e[0+1];
+528:			c := r[p];
+SEM ERR: Cannot assign value of type int,11 to variable 'c' of type real,4.
+529:			c := r[q];
+530:			c := r[r];
+531:	
+532:			b := e[0];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+533:			b := e[0+1];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+534:			b := e[b];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+535:			b := e[c];
+536:			b := e[p];
+SEM ERR: Cannot assign value of type real,4 to variable 'b' of type int,11.
+537:			b := e[q];
+538:			b := e[e];
+539:	
+540:			c := e[0];
+541:			c := e[0+1];
+542:			c := e[c];
 543:			c := e[c];
-544:			c := e[c];
-545:			c := e[p];
-546:			c := e[q];
-547:			c := e[e];
-548:	
-549:			s[0] = 1;
-550:			s[0] = 1.0;
-551:			s[0] = 1+1;
-552:			s[0] = 1+1.0;
-553:			s[0] = b;
-554:			s[0] = c;
-555:			s[0] = d; 
-556:			s[0] = e;
-557:			s[0] = p;
-558:			s[0] = r;
-559:			s[0] = s;
-560:			s[0] = q;
-561:			s[0] = 1>9;
+544:			c := e[p];
+545:			c := e[q];
+546:			c := e[e];
+547:	
+548:			s[0] = 1;
+SYNERR: expecting assignop, received relop
+549:			s[0] = 1.0;
+SYNERR: expecting assignop, received relop
+550:			s[0] = 1+1;
+SYNERR: expecting assignop, received relop
+551:			s[0] = 1+1.0;
+SYNERR: expecting assignop, received relop
+552:			s[0] = b;
+SYNERR: expecting assignop, received relop
+553:			s[0] = c;
+SYNERR: expecting assignop, received relop
+554:			s[0] = d; 
+SYNERR: expecting assignop, received relop
+555:			s[0] = e;
+SYNERR: expecting assignop, received relop
+556:			s[0] = p;
+SYNERR: expecting assignop, received relop
+557:			s[0] = r;
+SYNERR: expecting assignop, received relop
+558:			s[0] = s;
+SYNERR: expecting assignop, received relop
+559:			s[0] = q;
+SYNERR: expecting assignop, received relop
+560:			s[0] = 1>9;
+SYNERR: expecting assignop, received relop
+561:	
 562:	
-563:	
-564:			r[0] = 1;
-565:			r[0] = 1.0;
-566:			r[0] = 1+1;
-567:			r[0] = 1+1.0;
-568:			r[0] = b;
-569:			r[0] = c;
-570:			r[0] = d; 
-571:			r[0] = e;
-572:			r[0] = p;
+563:			r[0] = 1;
+SYNERR: expecting assignop, received relop
+564:			r[0] = 1.0;
+SYNERR: expecting assignop, received relop
+565:			r[0] = 1+1;
+SYNERR: expecting assignop, received relop
+566:			r[0] = 1+1.0;
+SYNERR: expecting assignop, received relop
+567:			r[0] = b;
+SYNERR: expecting assignop, received relop
+568:			r[0] = c;
+SYNERR: expecting assignop, received relop
+569:			r[0] = d; 
+SYNERR: expecting assignop, received relop
+570:			r[0] = e;
+SYNERR: expecting assignop, received relop
+571:			r[0] = p;
+SYNERR: expecting assignop, received relop
+572:			r[0] = r;
+SYNERR: expecting assignop, received relop
 573:			r[0] = r;
-574:			r[0] = r;
-575:			r[0] = q;
-576:			r[0] = 1>9;
-577:	
-578:					d[0] = 1;
-579:			d[0] = 1.0;
-580:			d[0] = 1+1;
-581:			d[0] = 1+1.0;
-582:			d[0] = b;
-583:			d[0] = c;
-584:			d[0] = d; 
-585:			d[0] = e;
-586:			d[0] = p;
-587:			d[0] = r;
-588:			d[0] = d;
-589:			d[0] = q;
-590:			d[0] = 1>9;
-591:	
-592:			
-593:			e[0] = 1;
-594:			e[0] = 1.0;
-595:			e[0] = 1+1;
-596:			e[0] = 1+1.0;
-597:			e[0] = b;
-598:			e[0] = c;
-599:			e[0] = d; 
-600:			e[0] = e;
-601:			e[0] = p;
+SYNERR: expecting assignop, received relop
+574:			r[0] = q;
+SYNERR: expecting assignop, received relop
+575:			r[0] = 1>9;
+SYNERR: expecting assignop, received relop
+576:	
+577:			d[0] = 1;
+SYNERR: expecting assignop, received relop
+578:			d[0] = 1.0;
+SYNERR: expecting assignop, received relop
+579:			d[0] = 1+1;
+SYNERR: expecting assignop, received relop
+580:			d[0] = 1+1.0;
+SYNERR: expecting assignop, received relop
+581:			d[0] = b;
+SYNERR: expecting assignop, received relop
+582:			d[0] = c;
+SYNERR: expecting assignop, received relop
+583:			d[0] = d; 
+SYNERR: expecting assignop, received relop
+584:			d[0] = e;
+SYNERR: expecting assignop, received relop
+585:			d[0] = p;
+SYNERR: expecting assignop, received relop
+586:			d[0] = r;
+SYNERR: expecting assignop, received relop
+587:			d[0] = d;
+SYNERR: expecting assignop, received relop
+588:			d[0] = q;
+SYNERR: expecting assignop, received relop
+589:			d[0] = 1>9;
+SYNERR: expecting assignop, received relop
+590:	
+591:			
+592:			e[0] = 1;
+SYNERR: expecting assignop, received relop
+593:			e[0] = 1.0;
+SYNERR: expecting assignop, received relop
+594:			e[0] = 1+1;
+SYNERR: expecting assignop, received relop
+595:			e[0] = 1+1.0;
+SYNERR: expecting assignop, received relop
+596:			e[0] = b;
+SYNERR: expecting assignop, received relop
+597:			e[0] = c;
+SYNERR: expecting assignop, received relop
+598:			e[0] = d; 
+SYNERR: expecting assignop, received relop
+599:			e[0] = e;
+SYNERR: expecting assignop, received relop
+600:			e[0] = p;
+SYNERR: expecting assignop, received relop
+601:			e[0] = e;
+SYNERR: expecting assignop, received relop
 602:			e[0] = e;
-603:			e[0] = e;
-604:			e[0] = q;
-605:			e[0] = 1>9
-606:	
-607:		end;	
-608:	begin
-609:		a := 3;
-610:		a := 4.0;
-611:		p := 5
-612:	end .
+SYNERR: expecting assignop, received relop
+603:			e[0] = q;
+SYNERR: expecting assignop, received relop
+604:			e[0] = 1>9
+SYNERR: expecting assignop, received relop
+605:	
+606:		end;	
+607:	begin
+608:		a := 3;
+SEM ERR: Cannot assign value of type int,11 to variable 'a' of type real,4.
+609:		a := 4.0;
+610:		p := 5
+SEM ERR: identifier 'p' has not been declared
+611:	end .

@@ -334,6 +334,7 @@ int type() {
 			synchType(NT_TYPE); 
 			return ERROR_TYPE;
 		}
+		int currLine =tokenizingLine;
 		if(!match(OPENBRACKET)) {
 			synchType(NT_TYPE); 
 			return ERROR_TYPE;
@@ -366,6 +367,9 @@ int type() {
 			return ARRAY_REAL_TYPE;
 		}
 		else {
+			char *err =  malloc(sizeof(char) * 80);
+			snprintf(err, sizeof(char) * 80, "SEM ERR: Cannot create array containing values of type %d\n", typeToString(sType));
+			appendError(err, currLine);
 			return ERROR_TYPE;
 		}
 	}
@@ -711,9 +715,7 @@ void stmt() {
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
 		int eType = expr();
 		if(eType != ERROR_TYPE && vType->type != ERROR_TYPE) {
-			printf("checking type equivalence of %d&%d=%d\n", vType->type, eType, typesEquivalent(vType->type, eType));
 			if(typesEquivalent(vType->type, eType) == 0) {
-				printf("Types not equivalent in stmt");
 				char *err =  malloc(sizeof(char) * 160);
 				snprintf(err, sizeof(char) * 160, "SEM ERR: Cannot assign value of type %s,%d to variable '%s' of type %s,%d.\n", typeToString(eType),eType, vType->lexeme, typeToString(vType->type),vType->type);
 				appendError(err, currLine);
@@ -727,8 +729,11 @@ void stmt() {
 	else if( tok->attribute->attrInt == IF) {
 		if(!match(IF)) {synchType(NT_STMT); return;}
 		int eType = expr();
-		if(eType != BOOL_TYPE) {
-			appendError("SEM ERR: Expecting bool type in 'if' condition", tokenizingLine);
+		if(eType != BOOL_TYPE && eType != ERROR_TYPE) {
+			puts("Got error in if");
+			char *err = malloc(sizeof(char) * 80);
+			strcpy(err, "SEM ERR: Expecting bool type in 'if' condition");
+			appendError(err, tokenizingLine);
 		}
 		if(!match(THEN)) {synchType(NT_STMT); return;}
 		stmt();
@@ -737,7 +742,7 @@ void stmt() {
 	else if( tok->attribute->attrInt == WHILE) {
 		if(!match(WHILE)) {synchType(NT_STMT); return;}
 		int eType = expr();
-		if(eType != BOOL_TYPE) {
+		if(eType != BOOL_TYPE && eType != ERROR_TYPE) {
 			appendError("SEM ERR: Expecting bool type in 'while' condition\n", tokenizingLine);
 		}
 		if(!match(DO)) {synchType(NT_STMT); return;}
@@ -780,7 +785,6 @@ struct varReturn *var() {
 		struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
 		char* lexeme = tok->attribute->attrString;
 		int idType = matchId(NT_VAR); 
-		printf("var got id of type %d\n", idType);
 		if(idType == ERROR_TYPE) {
 			char *err =  malloc(sizeof(char) * 80);
 			strcpy(err, "SEM ERR: identifier '");
@@ -789,7 +793,6 @@ struct varReturn *var() {
 			appendError(err, tokenizingLine);
 		}
 		int vType = varPrime(idType);
-		printf("called var' got type %d\n", vType);
 		ret->type = vType;
 		ret->lexeme = lexeme;
 		return ret;
@@ -811,13 +814,24 @@ int varPrime(int type) {
 
 		if(!match(OPENBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
 		int eType = expr();
+		int currLine = tokenizingLine;
 		if(!match(CLOSEBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
 		//array indices have to be ints
-		if(eType != INT_TYPE) { return ERROR_TYPE; }
+		if(eType != INT_TYPE) { 
+			char *err =  malloc(sizeof(char) * 80);
+			snprintf(err, sizeof(char) * 80, "SEM ERR: Array indices are of type int, you're using type %d\n", typeToString(eType));
+			appendError(err, currLine);
+			return ERROR_TYPE; 
+		}
 		//return the type which is being contained in the array
 		if(type == ARRAY_INT_TYPE || type == FP_ARRAY_INT_TYPE) { return INT_TYPE; }
 		else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE) { return REAL_TYPE; }
-		else { return ERROR_TYPE; }
+		else { 
+			char *err =  malloc(sizeof(char) * 80);
+			snprintf(err, sizeof(char) * 80, "SEM ERR: Type %d is not an array and is not indexed\n", typeToString(type));
+			appendError(err, currLine);
+			return ERROR_TYPE; 
+		}
 	}
 	else if(tok->tokenName == ASSIGNOP) {
 		return type;
@@ -877,11 +891,23 @@ int exprPrime(int type) {
 	 	return type;
 	}
 	else if(tok->tokenName == RELOP) {
-		if(type != INT_TYPE && type != REAL_TYPE) { return ERROR_TYPE; }
 		if(!match(RELOP)) {synchType(NT_EXPR); return ERROR_TYPE;}
+		int currLine =tokenizingLine;
 		int sType = simExp();
-		if(sType != INT_TYPE && sType != REAL_TYPE) {return ERROR_TYPE;}
-		return BOOL_TYPE;
+		int generatedType = BOOL_TYPE;
+		if(sType != INT_TYPE && sType != REAL_TYPE && sType != ERROR_TYPE) {
+			char *err =  malloc(sizeof(char) * 160);
+			snprintf(err, sizeof(char) * 160, "SEM ERR: cannot apply relation operators to type %s\n", typeToString(sType));
+			appendError(err, currLine);
+			generatedType = ERROR_TYPE;
+		}
+		if (type != INT_TYPE && type != REAL_TYPE && type != ERROR_TYPE) {
+			char *err =  malloc(sizeof(char) * 160);
+			snprintf(err, sizeof(char) * 160, "SEM ERR: cannot apply relation operators to type %s\n", typeToString(type));
+			appendError(err, currLine);
+			generatedType = ERROR_TYPE;
+		}
+		return generatedType;
 	}
 	else {
 		printSynerr("relop, close paren, semicolon, end, CLOSEBRACKET, then, do, comma, else", "expression");
@@ -924,12 +950,20 @@ int simExpPrime(int type) {
 			synchType(NT_SIMEXP);
 			return ERROR_TYPE;
 		}
+		int currLine = tokenizingLine;
 		int sType = term();
 		int generatedType = ERROR_TYPE;
 		//make sure only nums are being added or subtracted
 		if(addOp == ADD || addOp == SUBTRACT) {
 			if(!(type == INT_TYPE || type == REAL_TYPE || type == FP_INT_TYPE || type == FP_REAL_TYPE) || 
 				!(sType == INT_TYPE || sType == REAL_TYPE || sType == FP_INT_TYPE || sType == FP_REAL_TYPE))  {
+				char *err =  malloc(sizeof(char) * 80);
+				if(addOp == ADD)
+					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot add type %s to type %s\n", typeToString(type), typeToString(sType));
+				else 
+					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot subtract type %s to type %s\n", typeToString(type), typeToString(sType));
+				if(sType != ERROR_TYPE && type != ERROR_TYPE)
+					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
 			} 
 			else{
@@ -942,9 +976,15 @@ int simExpPrime(int type) {
 		//make sure only bools are being OR'd
 		if(addOp == OR) {
 			if(type != BOOL_TYPE || sType != BOOL_TYPE) {
+				char *err =  malloc(sizeof(char) * 80);
+				snprintf(err, sizeof(char) * 80, "SEM ERR: cannot or type %s to type %s\n", typeToString(type), typeToString(sType));
+				if(sType != ERROR_TYPE && type != ERROR_TYPE)
+					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
 			}
-			generatedType = BOOL_TYPE;
+			else {
+				generatedType = BOOL_TYPE;
+			}
 		}
 
 		return simExpPrime(generatedType);
@@ -975,16 +1015,25 @@ int termPrime(int termPIn) {
 		return termPIn;
 	}
 	else if(tok->tokenName == MULOP) {
+		
 		int mulop = tok->attribute->attrInt;
 		if(!match(MULOP)) {
 			synchType(NT_TERM); 
 			return ERROR_TYPE;
 		}
+		int currLine = tokenizingLine;
 		int fType = factor(termPIn);
 		int generatedType = ERROR_TYPE;
 		if(mulop == MULTIPLY || mulop == DIVIDE) {
 			if(!(termPIn == INT_TYPE || termPIn == REAL_TYPE || termPIn == FP_INT_TYPE || termPIn == FP_REAL_TYPE) || 
 				!(fType == INT_TYPE || fType == REAL_TYPE || fType == FP_INT_TYPE || fType == FP_REAL_TYPE)) {
+				char *err =  malloc(sizeof(char) * 80);
+				if(mulop == MULTIPLY)
+					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot multiply type %s to type %s\n", typeToString(termPIn), typeToString(fType));
+				else 
+					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot divide type %s to type %s\n", typeToString(termPIn), typeToString(fType));
+				if(fType != ERROR_TYPE && termPIn != ERROR_TYPE)
+					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
 			} 
 			else {
@@ -995,14 +1044,26 @@ int termPrime(int termPIn) {
 			}
 		}
 		if(mulop == DIV || mulop == MOD) {
-			if(termPIn != INT_TYPE || fType != INT_TYPE || termPIn != FP_INT_TYPE || fType != FP_INT_TYPE) {
+			if(!(termPIn == INT_TYPE || termPIn == FP_INT_TYPE) || !(fType == INT_TYPE || fType == FP_INT_TYPE) ) {
+				char *err =  malloc(sizeof(char) * 80);
+				if(mulop == DIV)
+					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot div type %s to type %s\n", typeToString(termPIn), typeToString(fType));
+				else 
+					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot mod type %s to type %s\n", typeToString(termPIn), typeToString(fType));
+				if(fType != ERROR_TYPE && termPIn != ERROR_TYPE)
+					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
 			}
-			else 
+			else {
 				generatedType = INT_TYPE;
+			}
 		}
 		if(mulop == AND) {
-			if(termPIn != BOOL_TYPE || fType != BOOL_TYPE|| termPIn != FP_BOOL_TYPE || fType != FP_BOOL_TYPE) {
+			if(!(termPIn == BOOL_TYPE || termPIn == FP_BOOL_TYPE) || !(fType == BOOL_TYPE || fType == FP_BOOL_TYPE)) {
+				char *err =  malloc(sizeof(char) * 80);
+				snprintf(err, sizeof(char) * 80, "SEM ERR: cannot and type %s to type %s\n", typeToString(termPIn), typeToString(fType));
+				if(fType != ERROR_TYPE && termPIn != ERROR_TYPE)
+					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
 			}
 			else
