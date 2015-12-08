@@ -132,13 +132,14 @@ struct node {
 
 struct blueNode {
     int type;
+    int arraySize;
     char *id;
     struct blueNode *next;
 };
 
-struct expLstReturn {
-	int count;
-	int* types;
+struct intLstNode {
+	int val;
+	struct intLstNode *next;
 };
 
 struct greenNode {

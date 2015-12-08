@@ -1,10 +1,15 @@
 program testProg (a);
-    function testSub : integer ;
-        function inner : integer ;
+    function testSub(d : integer) : integer ;
+        function inner(b : integer) : integer ;
+        var c : integer;
         begin
-        end;
-        function inner2 : integer ;
-        begin
+        	c := testSub(c);
+        	c := testSub(b);
+        	b := testSub(c);
+        	inner := c;
+        	testSub := c;
+        	inner := b
+
         end;
     begin
     end;

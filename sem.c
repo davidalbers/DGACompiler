@@ -35,9 +35,9 @@ void stmtLstPrime();
 void stmt();
 void stmtPrime();
 struct varReturn *var();
-int varPrime(int type);
-struct intListNode *expLst();
-struct intLstNode *expLstPrime(struct intLstNode* firstNode, struct intLstNode* lastNode);
+struct varPrimeReturn * varPrime(int type)varPrime(int type);
+struct intLstNode * expLst();
+struct intLstNode * expLstPrime(struct intLstNode * firstNode, struct intLstNode * lastNode);
 int expr();
 int exprPrime(int type);
 int simExp();
@@ -549,6 +549,7 @@ void args() {
 		if(!match(OPENPAREN)) {synchType(NT_ARGS); return;}
 		paramLst();
 		if(!match(CLOSEPAREN)) {synchType(NT_ARGS); return;}
+		printf("got %d params for greennode %s\n", topGreen->numParams, topGreen->id);
 	}
 	else {
 		printSynerr("open paren", "args");
@@ -790,6 +791,22 @@ struct varReturn *var() {
 			appendError(err, tokenizingLine);
 		}
 		int vType = varPrime(idType);
+		//if function return function return type
+		if(vType == FUNCTION_TYPE) {
+			struct greenNode *currGreen = topGreen;
+			while( (strcmp(lexeme, currGreen->id) != 0) || (currGreen->duplicate == 1)) {
+				currGreen = currGreen->prev;
+				if(currGreen == NULL)
+					break;
+			}
+			if(currGreen == NULL) {
+				puts("Tried to find green node in fuction' could not match");
+				return ERROR_TYPE;
+			}
+			ret->type = currGreen->returnType;
+			ret->lexeme = lexeme;
+			return ret;
+		}
 		ret->type = vType;
 		ret->lexeme = lexeme;
 		return ret;
@@ -803,13 +820,16 @@ struct varReturn *var() {
 	}
 }
 
-int varPrime(int type) {
-	if(tok->tokenName == ID) {
-		return type;
-	}
-	else if(tok->tokenName == OPENBRACKET) {
+struct varPrimeReturn * varPrime(int type) {
+	// if(tok->tokenName == ID) {
+	// 	return type;
+	// } this got here on accident
+	struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
+	if(tok->tokenName == OPENBRACKET) {
 
 		if(!match(OPENBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
+		int arraySize = 0;
+		
 		int eType = expr();
 		int currLine = tokenizingLine;
 		if(!match(CLOSEBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
@@ -818,7 +838,8 @@ int varPrime(int type) {
 			char *err =  malloc(sizeof(char) * 80);
 			snprintf(err, sizeof(char) * 80, "SEM ERR: Array indices are of type int, you're using type %s\n", typeToString(eType));
 			appendError(err, currLine);
-			return ERROR_TYPE; 
+			ret->type = ERROR_TYPE; 
+			return ret;
 		}
 		//return the type which is being contained in the array
 		if(type == ARRAY_INT_TYPE || type == FP_ARRAY_INT_TYPE) { return INT_TYPE; }
@@ -827,21 +848,24 @@ int varPrime(int type) {
 			char *err =  malloc(sizeof(char) * 80);
 			snprintf(err, sizeof(char) * 80, "SEM ERR: Type %s is not an array and is not indexed\n", typeToString(type));
 			appendError(err, currLine);
-			return ERROR_TYPE; 
+			ret->type = ERROR_TYPE; 
+			return ret;
 		}
 	}
 	else if(tok->tokenName == ASSIGNOP) {
-		return type;
+		ret->type = type;
+		return ret;
 	}
 	else {
 		printSynerr("id, open bracket, or assign op", "variable'");
 		synchType(NT_VAR);
-		return ERROR_TYPE;
+		ret->type = ERROR_TYPE; 
+		return ret;
 	}
 }
 
 
-struct intLstNode *expLst() {
+struct intLstNode * expLst() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM ||
 		tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT || tok->attribute->attrInt == NOT) {
 		int eType = expr();
@@ -856,7 +880,7 @@ struct intLstNode *expLst() {
 	}
 }
 
-struct intLstNode *expLstPrime(struct intLstNode* firstNode, struct intLstNode* lastNode) {
+struct intLstNode * expLstPrime(struct intLstNode* firstNode, struct intLstNode* lastNode) {
 	if(tok->tokenName == COMMA) {
 		if(!match(COMMA)) {synchType(NT_EXPLST); return NULL;}
 		int eType = expr();
@@ -1104,7 +1128,7 @@ int factor() {
 			strcat(err, "' has not been declared\n");
 			appendError(err, currLine);
 		}
-		return factorPrime(idType);
+		return factorPrime(lexeme, idType);
 	}
 	else if(tok->tokenName == NUM) {
 
@@ -1181,11 +1205,62 @@ int factorPrime(char *id, int type) {
 	if(tok->tokenName == OPENPAREN) {
 		int generatedType = ERROR_TYPE;
 		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
-		struct intListNode *eRet = expLst(); 
+		struct intLstNode *eRet = expLst(); 
+		int currLine = tokenizingLine;
 		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
-		//todo get green node from id
-		//todo match eRet types to greenNode.bluenodes.type
-		return eType; 
+		if(type != FUNCTION_TYPE) {
+			char *err = malloc(sizeof(char) * 80);
+			snprintf(err, sizeof(char) * 80, "SEM ERR calling type %s like it's a function\n", typeToString(type));
+			if(type != ERROR_TYPE)
+				appendError(err, currLine);
+			return ERROR_TYPE;
+		}
+		struct greenNode *currGreen = topGreen;
+		while( (strcmp(id, currGreen->id) != 0) || (currGreen->duplicate == 1)) {
+			currGreen = currGreen->prev;
+			if(currGreen == NULL)
+				break;
+		}
+		if(currGreen == NULL) {
+			puts("tried to find method but could not. Should not happen");
+			return ERROR_TYPE;
+		}
+		else 
+			printf("matched %s with greenNode %s\n", id, currGreen->id);
+		int paramsToCheck = currGreen->numParams;
+		struct intLstNode *currExpLstVal = eRet;
+		struct blueNode *currFunParam = currGreen->firstBlue;
+		while(paramsToCheck > 0) {
+			//next explst val is null, error
+			if(currExpLstVal == NULL) {
+				char *err = malloc(sizeof(char) * 80);
+				snprintf(err, sizeof(char) * 80,"SEM ERR mismatching number of parameters in function call, expecting %d\n", currGreen->numParams);
+				appendError(err, currLine);
+				return ERROR_TYPE;
+			}
+			//types don't match, error
+			if(typesEquivalent(currFunParam->type, currExpLstVal->val) == 0) {
+				char *err = malloc(sizeof(char) * 80);
+				snprintf(err, sizeof(char) * 80,"SEM ERR function parameter %d should be %s but you passed %s\n", (currGreen->numParams - paramsToCheck), 
+					typeToString(currFunParam->type), typeToString(currExpLstVal->val));
+				if(currExpLstVal->val != ERROR_TYPE)
+					appendError(err, currLine);
+				return ERROR_TYPE;
+			}
+			//advance pointers, decrement counter
+			currFunParam = currFunParam->next;
+			currExpLstVal = currExpLstVal->next;
+			paramsToCheck--;
+		}
+		//still more params in explst, error
+		if(currExpLstVal != NULL) {
+			char *err = malloc(sizeof(char) * 80);
+			snprintf(err,sizeof(char) * 80, "SEM ERR mismatching number of parameters in function call, expecting %d\n", currGreen->numParams);
+			appendError(err, currLine);
+			return ERROR_TYPE;
+		}
+		//made it to this point with no errors? return function return type
+		return currGreen->returnType; 
 	}
 	else if(tok->tokenName == OPENBRACKET) {
 		//factor->id[exp], if exp is an int and id is an array return type stored in array
@@ -1213,7 +1288,8 @@ int factorPrime(char *id, int type) {
             //exp is not an int
             char *err =  malloc(sizeof(char) * 80);
             snprintf(err, sizeof(char) * 80, "SEM ERR arrays can only be accessed with ints you're using type %s\n", typeToString(eType));
-            appendError(err, currLine);
+            if(eType != ERROR_TYPE)
+   				appendError(err, currLine);
 			return ERROR_TYPE;
         }
 		return fType;
@@ -1221,6 +1297,27 @@ int factorPrime(char *id, int type) {
 	else if(tok->tokenName == CLOSEPAREN || tok->attribute->attrInt == END || tok->tokenName == CLOSEBRACKET ||
 		tok->attribute->attrInt == THEN || tok->attribute->attrInt == DO || tok->tokenName == ADDOP ||
 		tok->tokenName == MULOP || tok->tokenName == COMMA || tok->tokenName == ELSE || tok->tokenName == RELOP || tok->tokenName == SEMICOLON) {
+		//if function and no params, return returnType, else error
+		if(type == FUNCTION_TYPE) {
+			struct greenNode *currGreen = topGreen;
+			while( (strcmp(id, currGreen->id) != 0) || (currGreen->duplicate == 1)) {
+				currGreen = currGreen->prev;
+				if(currGreen == NULL)
+					break;
+			}
+			if(currGreen == NULL) {
+				puts("Tried to find green node in fuction' could not match");
+				return ERROR_TYPE;
+			}
+			if(currGreen->numParams > 0) {
+				//exp is not an int
+	            char *err =  malloc(sizeof(char) * 80);
+	            snprintf(err, sizeof(char) * 80, "SEM ERR calling method with no params\n");
+	            appendError(err, (tokenizingLine-1));
+				return ERROR_TYPE;
+			}
+			return currGreen->returnType;
+		}
 		return type;//epsilon
 	}
 	else {
