@@ -36,8 +36,8 @@ void stmt();
 void stmtPrime();
 struct varReturn *var();
 int varPrime(int type);
-void expLst();
-void expLstPrime();
+struct intListNode *expLst();
+struct intLstNode *expLstPrime(struct intLstNode* firstNode, struct intLstNode* lastNode);
 int expr();
 int exprPrime(int type);
 int simExp();
@@ -47,7 +47,7 @@ int termPrime();
 int factor();
 int matchNum(int nt);
 int matchId(int nt);
-int factorPrime(int type);
+int factorPrime(char *id, int type);
 void sign();
 int synch(struct token * tok, int syncingType);
 void synchType(int syncingType);
@@ -105,6 +105,7 @@ void program() {
 		}
 		struct greenNode *newGreen = (struct greenNode *)malloc(sizeof(struct greenNode));
 		newGreen->id = lexeme;
+		newGreen->type = PROGRAM_TYPE;
 		tok = getNextToken();
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
@@ -118,7 +119,6 @@ void program() {
 		//if(!match(ID)) {synchType(NT_PROGRAM); return;}
 
 		if(!match(OPENPAREN)) {synchType(NT_PROGRAM); return;}
-		puts("End of prog processing");
 		idLst();
 		if(!match(CLOSEPAREN)) {synchType(NT_PROGRAM); return;}
 		if(!match(SEMICOLON)) {synchType(NT_PROGRAM); return;}
@@ -268,9 +268,7 @@ void decls() {
 				strcat(err, "' has already been declared in this scope\n");
 				appendError(err, tokenizingLine);
 			}
-			else {
-				puts("got blue node");
-			}
+
 			tok = getNextToken();
 			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
@@ -305,9 +303,7 @@ void declsPrime() {
 				strcat(err, "' has already been declared in this scope\n");
 				appendError(err, tokenizingLine);
 			}
-			else {
-				puts("got blue node");
-			}
+			
 			tok = getNextToken();
 			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
@@ -417,7 +413,7 @@ void subPrgDecls() {
 
 void subPrgDeclsPrime() {
 	if(tok->attribute->attrInt == FUNCTION) {
-		subPrgDecls();
+		subPrgDecl();
         if(!match(SEMICOLON)) {puts("messed up subprgdecls'"); synchType(NT_SUBPRGDECLS); return;}
 		struct greenNode *popped = popGreenNode();
 		if(popped == NULL) {
@@ -511,6 +507,7 @@ void subPrgHead() {
 		}
 		struct greenNode *newGreen = (struct greenNode *)malloc(sizeof(struct greenNode));
 		newGreen->id = lexeme;
+		newGreen->type = FUNCTION_TYPE;
 		int success = checkAddGreenNode(newGreen);
 		if(success == 0) {
 			char *err =  malloc(sizeof(char) * 80);
@@ -567,6 +564,7 @@ void paramLst() {
 		else {
 			synchType(NT_PROGRAM); return;
 		}
+
 		struct blueNode *newBlue = (struct blueNode *)malloc(sizeof(struct blueNode));
 		newBlue->id = lexeme;
 		int success = checkAddBlueNode(newBlue);
@@ -577,9 +575,7 @@ void paramLst() {
 			strcat(err, "' has already been declared in this scope\n");
 			appendError(err, tokenizingLine);
 		}
-		else {
-			puts("got blue node");
-		}
+		topGreen->numParams = topGreen->numParams + 1;
 		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
@@ -613,6 +609,7 @@ void paramLstPrime() {
 			strcat(err, "' has already been declared in this scope\n");
 			appendError(err, tokenizingLine);
 		}
+		topGreen->numParams = topGreen->numParams + 1;
 		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
@@ -844,30 +841,37 @@ int varPrime(int type) {
 }
 
 
-void expLst() {
+struct intLstNode *expLst() {
 	if(tok->tokenName == OPENPAREN || tok->tokenName == ID || tok->tokenName == NUM ||
 		tok->attribute->attrInt == ADD || tok->attribute->attrInt == SUBTRACT || tok->attribute->attrInt == NOT) {
-		expr();
-		expLstPrime();
+		int eType = expr();
+		struct intLstNode *firstNode = (struct intLstNode *)malloc(sizeof(struct intLstNode));
+		firstNode->val = eType;
+		return expLstPrime(firstNode, firstNode);
 	}
 	else {
 		printSynerr("open paren, id, num, plus, minus, not", "expression_list");
 		synchType(NT_EXPLST);
+		return NULL;
 	}
 }
 
-void expLstPrime() {
+struct intLstNode *expLstPrime(struct intLstNode* firstNode, struct intLstNode* lastNode) {
 	if(tok->tokenName == COMMA) {
-		if(!match(COMMA)) {synchType(NT_EXPLST); return;}
-		expr();
-		expLstPrime();	
+		if(!match(COMMA)) {synchType(NT_EXPLST); return NULL;}
+		int eType = expr();
+		struct intLstNode *newNode = (struct intLstNode *)malloc(sizeof(struct intLstNode));
+		newNode->val = eType;
+		lastNode->next = newNode;
+		return expLstPrime(firstNode, newNode);	
 	}
 	else if(tok->tokenName == CLOSEPAREN) {
-		return; //epsilon
+		return firstNode; //epsilon
 	}
 	else {
 		printSynerr("comma, close paren", "expression_list");
 		synchType(NT_EXPLST);
+		return NULL;
 	}
 }
 
@@ -1146,6 +1150,10 @@ int matchId(int nt) {
 	if(tok->tokenName == ID) {
 		struct greenNode *currGreen = topGreen;
         while(currGreen != NULL) {
+  			if((strcmp(currGreen->id, tok->attribute->attrString) == 0) && (currGreen->duplicate == 0)) {
+                    tok = getNextToken();
+                    return currGreen->type;
+            }
             struct blueNode *currBlue = currGreen->firstBlue;
             //check matching blue
             while(currBlue != NULL) {
@@ -1169,12 +1177,15 @@ int matchId(int nt) {
 }
 
 
-int factorPrime(int type) {
+int factorPrime(char *id, int type) {
 	if(tok->tokenName == OPENPAREN) {
+		int generatedType = ERROR_TYPE;
 		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
-		int eType = expr();
+		struct intListNode *eRet = expLst(); 
 		if(!match(CLOSEPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
-		return eType; //todo what is id(expLst) in pascal?
+		//todo get green node from id
+		//todo match eRet types to greenNode.bluenodes.type
+		return eType; 
 	}
 	else if(tok->tokenName == OPENBRACKET) {
 		//factor->id[exp], if exp is an int and id is an array return type stored in array
@@ -1449,6 +1460,7 @@ struct greenNode *popGreenNode() {
         return NULL;
     }
     else if(topGreen->prev == NULL) {
+    	puts("just removed last thing from stack");
         struct greenNode *ret = topGreen;
         topGreen = NULL;
         return ret;
@@ -1470,13 +1482,19 @@ void pushGreenNode(struct greenNode *newGreen) {
 }
 
 int checkAddGreenNode(struct greenNode *newGreen) {
-    if(topGreen == NULL) //no greens? don't need to check
+    if(topGreen == NULL) {
+    	//no greens? don't need to check
+    	printf("Adding green node id='%s'\n", newGreen->id);
         pushGreenNode(newGreen);
+	}
     else {
         struct greenNode *currGreen = topGreen;
         //check matching green
         while(currGreen != NULL) {
             if(strcmp(currGreen->id, newGreen->id) == 0) {
+            	newGreen->duplicate = 1;
+				pushGreenNode(newGreen);
+				printf("Adding green node id='%s'\n", newGreen->id);
                 return 0;
             }
             
@@ -1484,6 +1502,9 @@ int checkAddGreenNode(struct greenNode *newGreen) {
             //check matching blue
             while(currBlue != NULL) {
                 if(strcmp(currBlue->id, newGreen->id) == 0) {
+                	newGreen->duplicate = 1;
+            	 	pushGreenNode(newGreen);
+    				printf("Adding green node id='%s'\n", newGreen->id);
                     return 0;
                 }
                 currBlue = currBlue->next;
@@ -1493,6 +1514,7 @@ int checkAddGreenNode(struct greenNode *newGreen) {
         }
         //no matching blue or green, good to push on to stack
         pushGreenNode(newGreen);
+        printf("Adding green node id='%s'\n", newGreen->id);
     }
     return 1;
 }
@@ -1523,6 +1545,7 @@ int checkAddBlueNode(struct blueNode *newBlue) {
        emptyBlue = emptyBlue->next;
    }
    emptyBlue->next = newBlue;
+   printf("Adding blue node id='%s'\n", newBlue->id);
    return 1;
 }
 
@@ -1549,6 +1572,10 @@ char * typeToString(int type) {
 			return "real array";
 		case ERROR_TYPE:
 			return "error";
+		case FUNCTION_TYPE:
+			return "function";
+		case PROGRAM_TYPE:
+			return "program";
 		default:
 			return "undefined";
 	}

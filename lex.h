@@ -95,7 +95,8 @@
 #define FP_REAL_TYPE 9
 #define FP_ARRAY_REAL_TYPE 10
 #define ERROR_TYPE 0
-
+#define FUNCTION_TYPE 12
+#define PROGRAM_TYPE 13
 extern void loadFiles(char* src);
 extern struct token *getNextToken();
 extern char *tokenNameToString(int);
@@ -135,8 +136,16 @@ struct blueNode {
     struct blueNode *next;
 };
 
+struct expLstReturn {
+	int count;
+	int* types;
+};
+
 struct greenNode {
     int numParams;
+    int returnType;
+    int type;
+    int duplicate;
     char *id;
     struct blueNode *firstBlue;
     struct greenNode *prev;
