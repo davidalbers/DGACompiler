@@ -1,10 +1,10 @@
-Scope of fun1
-loc: 0		id: d
-Scope of fun3
+Scope of nested
+loc: 0		id: f
+Scope of inner
+loc: 0		id: c
+Scope of inner2
 loc: 0		id: e
-Scope of fun2
-loc: 0		id: e
-Scope of test
+Scope of testProg
 loc: 0		id: a
-loc: 4		id: b
-loc: 12		id: c
+loc: 4		id: r
+loc: 12		id: s

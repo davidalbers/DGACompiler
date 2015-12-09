@@ -65,6 +65,8 @@ int searchAllGreens(struct greenNode* start, char* id);
 int matchIdInSubs(struct greenNode* start, char* id);
 struct greenNode * findGreenInSubs(struct greenNode* start, char* id);
 void printBlues(struct blueNode * first, char * scopeName);
+int matchForward(struct greenNode *start, char* id);
+struct greenNode * findGreenInForward(struct greenNode *start, char* id);
 extern int errno;
 int tokenizingLine = 0;
 FILE * listingFile;
@@ -850,6 +852,8 @@ struct varReturn *var() {
 			}
 			if(currGreen == NULL) 
 				currGreen = findGreenInSubs(topGreen, lexeme);
+			if(currGreen == NULL) 
+				currGreen = findGreenInForward(topGreen, lexeme);
 			if(currGreen == NULL) {
 				puts("Tried to find green node in fuction' could not match");
 				return ERROR_TYPE;
@@ -1252,6 +1256,11 @@ int matchId(int nt) {
         	tok = getNextToken();
         	return subSearch;
         }
+        int forwardSearch = matchForward(topGreen, tok->attribute->attrString);
+        if(forwardSearch != -1) {
+        	tok = getNextToken();
+        	return forwardSearch;
+        }
 		//did not find, throw error
 		tok = getNextToken();
 		return ERROR_TYPE;
@@ -1260,6 +1269,39 @@ int matchId(int nt) {
 		synchType(nt);
 		return ERROR_TYPE;
 	}
+}
+
+
+int matchForward(struct greenNode *start, char* id) {
+	struct greenNode* curr = start->prev;
+	while(curr != NULL) {
+		if(strcmp(id, curr->id)==0)
+			return curr->type;
+		struct greenNode* currNextSiblings = curr->next;
+		while(currNextSiblings != NULL) {
+			if(strcmp(id, currNextSiblings->id)==0)
+				return currNextSiblings->type;
+			currNextSiblings = currNextSiblings->sibling;
+		}
+		curr = curr->prev;
+	}
+	return -1;
+}
+
+struct greenNode * findGreenInForward(struct greenNode *start, char* id) {
+	struct greenNode* curr = start->prev;
+	while(curr != NULL) {
+		if(strcmp(id, curr->id)==0)
+			return curr;
+		struct greenNode* currNextSiblings = curr->next;
+		while(currNextSiblings != NULL) {
+			if(strcmp(id, currNextSiblings->id)==0)
+				return currNextSiblings;
+			currNextSiblings = currNextSiblings->sibling;
+		}
+		curr = curr->prev;
+	}
+	return NULL;
 }
 
 int matchIdInSubs(struct greenNode* start, char* id) {
@@ -1322,6 +1364,9 @@ int factorPrime(char *id, int type) {
 		}
 		if(currGreen == NULL) {
 				currGreen = findGreenInSubs(topGreen, id);
+		}
+		if(currGreen == NULL) {
+			currGreen = findGreenInForward(topGreen, id);
 		}
 		if(currGreen == NULL) {
 			printf("tried to find method but could not. Should not happen. id: %s\n", id);
@@ -1413,6 +1458,9 @@ int factorPrime(char *id, int type) {
 			}
 			if(currGreen == NULL) 
 				currGreen = findGreenInSubs(topGreen, id);
+			if(currGreen == NULL) {
+				currGreen = findGreenInForward(topGreen, id);
+			}
 			if(currGreen == NULL) {
 				printf("Tried to find green node in fuction' could not match id: %s", id);
 				return ERROR_TYPE;

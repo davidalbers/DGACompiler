@@ -1,49 +1,55 @@
-1:	program test (input, output);
-2:	  var a : integer;
-3:	  var b : real;
-4:	  var c : array [1..2] of integer;
-5:	
-6:	  function fun1(x:integer; y:real; 
-7:	                  z:array [1..2] of integer; 
-8:	                  q: real) : integer;
-9:	    var d: integer;
-10:	    begin
-11:	      a:= 2;
-12:	      z[a] := 4;
-13:	      c[2] := 3;
-14:	      fun1 := c[1]
-15:	     end;
-16:	
-17:	   function fun2(x: integer; y: integer) : real;
-18:	     var e: real;
-19:	
-20:	     function fun3(n: integer; z: real) : integer;
-21:	       var e: integer;
-22:	       begin
-23:	         a:= e;
-24:	         e:= c[e];
-25:	         fun3 := 3
-26:	       end;
-27:	
-28:	     begin
-29:	       a:= fun1(x, e, c, b);
-SEM ERR: identifier 'fun1' has not been declared
-30:	       x:= fun3(c[1], e);
-31:	       e := e + 4.44;
-32:	       a:= (a mod y) div x;
-33:	       while ((a >= 4) and ((b <= e) 
-34:	                       or (not (a = c[a])))) do
-35:	         begin
-36:	           a:= c[a] + 1
-37:	         end;
-38:	       fun2 := 2.5 
-39:	     end;
-40:	
-41:	begin
-42:	  b:= fun2(c[4], c[5]);
-43:	  b:= fun2(c[4],2);
-44:	  if (a < 2) then a:= 1 else a := a + 2;
-45:	  if (b > 4.2) then a := c[a]
-46:	end.
-47:	
-48:	
+1:	program testProg (input, output);
+2:		var a : integer;
+3:		var r : array [1..2] of integer;
+4:		var s : array [1..2] of integer;
+5:	    function inner(b : integer) : integer ;
+6:		var c : integer;
+7:		function nested : integer ;
+8:			var f : integer;
+9:			begin
+10:			end;
+11:	    begin
+12:	    	c := inner(b);
+13:	    	inner := c;
+14:	    	c := inner(b);
+15:	    	c := inner2(b);
+SEM ERR: identifier 'inner2' has not been declared
+16:	    	c := nested;
+17:	    	a := 1;
+18:	    	e := 1;
+SEM ERR: identifier 'e' has not been declared
+19:	    	f := 1;
+SEM ERR: identifier 'f' has not been declared
+20:	    	c := 1
+21:	    end;
+22:	    function inner2(d : integer) : integer ;
+23:	    var e : integer;
+24:	    begin
+25:	   		d := inner(e);
+26:	    	inner := e;
+27:	    	d := inner(e);
+28:	    	d := inner2(e);
+29:	    	d := nested;
+SEM ERR: identifier 'nested' has not been declared
+30:	    	a := 1;
+31:	    	c := 1;
+SEM ERR: identifier 'c' has not been declared
+32:	    	f := 1;
+SEM ERR: identifier 'f' has not been declared
+33:	    	e := 1
+34:	    end;
+35:	begin
+36:	   	a := inner(a);
+37:		inner := a;
+38:		a := inner(a);
+39:		a := inner2(a);
+40:		a := nested;
+41:		a := 1;
+42:		c := 1;
+SEM ERR: identifier 'c' has not been declared
+43:		f := 1;
+SEM ERR: identifier 'f' has not been declared
+44:		e := 1
+SEM ERR: identifier 'e' has not been declared
+45:	end .
+46:	

@@ -4,19 +4,20 @@ program testProg (input, output);
 	var s : array [1..2] of integer;
     function inner(b : integer) : integer ;
 	var c : integer;
-	var f : real;
-	var a : integer;
+	function nested : integer ;
+		var f : integer;
+		begin
+		end;
     begin
     	c := inner(b);
     	inner := c;
     	c := inner(b);
     	c := inner2(b);
+    	c := nested;
     	a := 1;
-    	b := 1;
-    	c := 1;
-    	c := 1 + 1;
-    	c := 1 + 1;
-    	f := 1 + 1.0
+    	e := 1;
+    	f := 1;
+    	c := 1
     end;
     function inner2(d : integer) : integer ;
     var e : integer;
@@ -25,10 +26,10 @@ program testProg (input, output);
     	inner := e;
     	d := inner(e);
     	d := inner2(e);
+    	d := nested;
     	a := 1;
-    	b := 1;
     	c := 1;
-    	d := 1;
+    	f := 1;
     	e := 1
     end;
 begin
@@ -36,9 +37,9 @@ begin
 	inner := a;
 	a := inner(a);
 	a := inner2(a);
+	a := nested;
 	a := 1;
-	b := 1;
 	c := 1;
-	d := 1;
+	f := 1;
 	e := 1
 end .
