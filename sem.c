@@ -15,7 +15,7 @@ void idLst();
 void idLstPrime();
 void decls();
 void declsPrime();
-int type();
+struct typeReturn * type();
 int stdType();
 void subPrgDecls();
 void subPrgDeclsPrime();
@@ -35,7 +35,7 @@ void stmtLstPrime();
 void stmt();
 void stmtPrime();
 struct varReturn *var();
-struct varPrimeReturn * varPrime(int type)varPrime(int type);
+struct varPrimeReturn * varPrime(int type);
 struct intLstNode * expLst();
 struct intLstNode * expLstPrime(struct intLstNode * firstNode, struct intLstNode * lastNode);
 int expr();
@@ -58,18 +58,24 @@ int checkAddBlueNode(struct blueNode * newBlue);
 int checkAddGreenNode(struct greenNode * newGreen);
 struct greenNode *popGreenNode();
 void pushGreenNode(struct greenNode *newGreen);
-void checkAddType(char *lexeme, int type);
+void checkAddType(char *lexeme, int type, int size);
 char * typeToString(int type);
 int typesEquivalent(int type1, int type2);
+int searchAllGreens(struct greenNode* start, char* id);
+int matchIdInSubs(struct greenNode* start, char* id);
+struct greenNode * findGreenInSubs(struct greenNode* start, char* id);
+void printBlues(struct blueNode * first, char * scopeName);
 extern int errno;
 int tokenizingLine = 0;
 FILE * listingFile;
+FILE * memFile;
 int main(int argc, char *argv[]) 
 {
 	if(argc == 2) 
 	{
 		listingFile = fopen("listing.txt", "w");
-		if(listingFile != NULL) {
+		memFile = fopen("mem.txt", "w");
+		if(listingFile != NULL && memFile != NULL) {
 			loadFiles(argv[1]);
 			parse();
 		}
@@ -272,9 +278,9 @@ void decls() {
 			tok = getNextToken();
 			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
-			int tType = type();
+			struct typeReturn *tType = type();
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
-			checkAddType(lexeme, tType);
+			checkAddType(lexeme, tType->type, tType->size);
 			declsPrime();
 			break;
 		default: 
@@ -307,9 +313,9 @@ void declsPrime() {
 			tok = getNextToken();
 			//if(!match(ID)) {synchType(NT_DECLS); break;}
 			if(!match(COLON)) {synchType(NT_DECLS); break;}
-			int tType = type();
+			struct typeReturn *tType = type();
 			if(!match(SEMICOLON)) {synchType(NT_DECLS); break;}
-			checkAddType(lexeme, tType);
+			checkAddType(lexeme, tType->type, tType->size);
 			declsPrime();
 			break;
 		case BEGIN:
@@ -321,59 +327,101 @@ void declsPrime() {
 	}
 }
 
-int type() {
+struct typeReturn * type() {
+	struct typeReturn *ret = (struct typeReturn *)malloc(sizeof(struct typeReturn));
 	if(tok->attribute->attrInt == INTEGER || tok->attribute->attrInt == REAL) {
-		return stdType();
+		int type = stdType();
+		int size = 0;
+		if(type == INT_TYPE)
+			size = 4;
+		else if(type == REAL_TYPE)
+			size = 8;
+		ret->size = size;
+		ret->type = type;
+		return ret;
 	}
 	else if(tok->attribute->attrInt == ARRAY) {
+		ret->type = ERROR_TYPE;
+		int encounteredError = 0;
 		if(!match(ARRAY)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
 		}
 		int currLine =tokenizingLine;
 		if(!match(OPENBRACKET)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
+		}
+		int startVal = 0;
+		if(tok->tokenName == NUM) {
+			if(tok->subName != INTEGER) {
+				char *err =  malloc(sizeof(char) * 80);
+				snprintf(err, sizeof(char) * 80, "SEM ERR: Array range should only be in ints\n");
+				appendError(err, currLine);
+				encounteredError = 1;
+			}
+			else {
+				startVal = atoi(tok->attribute->attrString);
+			}
 		}
 		if(!match(NUM)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
 		}
 		if(!match(ARRAYRANGE)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
+		}
+		int endVal = 0;
+		if(tok->tokenName == NUM) {
+			if(tok->subName != INTEGER) {
+				char *err =  malloc(sizeof(char) * 80);
+				snprintf(err, sizeof(char) * 80, "SEM ERR: Array range should only be in ints\n");
+				appendError(err, currLine);
+				encounteredError = 1;
+			}
+			else {
+				endVal = atoi(tok->attribute->attrString);
+			}
 		}
 		if(!match(NUM)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
 		}
 		if(!match(CLOSEBRACKET)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
 		}
 		if(!match(OF)) {
 			synchType(NT_TYPE); 
-			return ERROR_TYPE;
+			return ret;
 		}
 		int sType = stdType();
 		if(sType == INTEGER || sType == INT_TYPE || sType == FP_INT_TYPE) {
-			return ARRAY_INT_TYPE;
+			if(encounteredError)
+				return ret;
+			ret->type = ARRAY_INT_TYPE;
+			ret->size = (endVal - startVal + 1) * 4;
+			return ret;
 		}
 		else if(sType == REAL || sType == REAL_TYPE || sType == FP_REAL_TYPE) {
-			return ARRAY_REAL_TYPE;
+			if(encounteredError)
+				return ERROR_TYPE;
+			ret->type = ARRAY_REAL_TYPE;
+			ret->size = (endVal - startVal + 1) * 8;
+			return ret;
 		}
 		else {
 			char *err =  malloc(sizeof(char) * 80);
 			snprintf(err, sizeof(char) * 80, "SEM ERR: Cannot create array containing values of type %s\n", typeToString(sType));
 			appendError(err, currLine);
-			return ERROR_TYPE;
+			return ret;
 		}
 	}
 	else {
 		printSynerr("intger, real, or array", "type");
 		synchType(NT_TYPE);
-
-		return ERROR_TYPE;
+		return ret;
 	}
 } 
 
@@ -403,6 +451,19 @@ void subPrgDecls() {
 	if(tok->attribute->attrInt == FUNCTION) {
 		subPrgDecl();
 		if(!match(SEMICOLON)) {synchType(NT_SUBPRGDECLS); return;}
+		 struct greenNode *popped = popGreenNode();
+		if(popped == NULL) {
+			puts("Stack is empty");
+			return;
+		}
+		else {
+			struct blueNode *currBlue = popped->firstBlue;
+			printf("2Popped a green node, here are its contents, name %s:\n", popped->id);
+			while(currBlue != NULL) {
+				printf("%s,%d\n", currBlue->id, currBlue->type);
+				currBlue = currBlue->next;
+			}
+		}
 		subPrgDeclsPrime();
 	}
 	else {
@@ -414,7 +475,7 @@ void subPrgDecls() {
 void subPrgDeclsPrime() {
 	if(tok->attribute->attrInt == FUNCTION) {
 		subPrgDecl();
-        if(!match(SEMICOLON)) {puts("messed up subprgdecls'"); synchType(NT_SUBPRGDECLS); return;}
+        if(!match(SEMICOLON)) { synchType(NT_SUBPRGDECLS); return;}
 		struct greenNode *popped = popGreenNode();
 		if(popped == NULL) {
 			puts("Stack is empty");
@@ -422,7 +483,7 @@ void subPrgDeclsPrime() {
 		}
 		else {
 			struct blueNode *currBlue = popped->firstBlue;
-			printf("Popped a green node, here are its contents, name %s:\n", popped->id);
+			printf("1Popped a green node, here are its contents, name %s:\n", popped->id);
 			while(currBlue != NULL) {
 				printf("%s,%d\n", currBlue->id, currBlue->type);
 				currBlue = currBlue->next;
@@ -431,19 +492,6 @@ void subPrgDeclsPrime() {
 		subPrgDeclsPrime();
 	}
 	else if(tok->attribute->attrInt == BEGIN){
- 		struct greenNode *popped = popGreenNode();
-		if(popped == NULL) {
-			puts("Stack is empty");
-			return;
-		}
-		else {
-			struct blueNode *currBlue = popped->firstBlue;
-			printf("Popped a green node, here are its contents, name %s:\n", popped->id);
-			while(currBlue != NULL) {
-				printf("%s,%d\n", currBlue->id, currBlue->type);
-				currBlue = currBlue->next;
-			}
-		}
 		return; //epsilon
 	}
 	else {
@@ -580,9 +628,9 @@ void paramLst() {
 		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
-		int tType = type();
-		int fpType = typeToFPType(tType);
-		checkAddType(lexeme, fpType);
+		struct typeReturn *tType = type();
+		int fpType = typeToFPType(tType->type);
+		checkAddType(lexeme, fpType, 0);
 		paramLstPrime();
 	}
 	else {
@@ -614,9 +662,9 @@ void paramLstPrime() {
 		tok = getNextToken();
 		//if(!match(ID)) {synchType(NT_PARAMLST); return;}
 		if(!match(COLON)) {synchType(NT_PARAMLST); return;}
-		int tType = type();
-		int fpType = typeToFPType(tType);
-		checkAddType(lexeme, tType);
+		struct typeReturn *tType = type();
+		int fpType = typeToFPType(tType->type);
+		checkAddType(lexeme, fpType, 0);
 		paramLstPrime();
 	}
 	else if(tok->tokenName == CLOSEPAREN) 
@@ -719,7 +767,6 @@ void stmt() {
 				appendError(err, currLine);
 			}
 		}
-
 	} 
 	else if(tok->attribute->attrInt == BEGIN) {
 		cpdStmt();
@@ -755,8 +802,9 @@ void stmt() {
 int typesEquivalent(int type1, int type2) {
 	if(type1 == INT_TYPE || type1 == FP_INT_TYPE)
 		return (type2 == INT_TYPE || type2 == FP_INT_TYPE);
-	if(type1 == REAL_TYPE || type2 == FP_REAL_TYPE)
+	if(type1 == REAL_TYPE || type1 == FP_REAL_TYPE) {
 		return (type2 == REAL_TYPE || type2 == FP_REAL_TYPE);
+	}
 	if(type1 == BOOL_TYPE || type1 == FP_BOOL_TYPE) 
 		return (type2 == BOOL_TYPE || type2 == FP_BOOL_TYPE); 
 	if(type1 == ARRAY_INT_TYPE || type1 == FP_ARRAY_INT_TYPE)
@@ -790,7 +838,8 @@ struct varReturn *var() {
 			strcat(err, "' has not been declared\n");
 			appendError(err, tokenizingLine);
 		}
-		int vType = varPrime(idType);
+		struct varPrimeReturn *vRet = varPrime(idType);
+		int vType = vRet->type;
 		//if function return function return type
 		if(vType == FUNCTION_TYPE) {
 			struct greenNode *currGreen = topGreen;
@@ -799,6 +848,8 @@ struct varReturn *var() {
 				if(currGreen == NULL)
 					break;
 			}
+			if(currGreen == NULL) 
+				currGreen = findGreenInSubs(topGreen, lexeme);
 			if(currGreen == NULL) {
 				puts("Tried to find green node in fuction' could not match");
 				return ERROR_TYPE;
@@ -824,7 +875,7 @@ struct varPrimeReturn * varPrime(int type) {
 	// if(tok->tokenName == ID) {
 	// 	return type;
 	// } this got here on accident
-	struct varReturn *ret = (struct varReturn *) malloc(sizeof(struct varReturn));
+	struct varPrimeReturn *ret = (struct varPrimeReturn *) malloc(sizeof(struct varPrimeReturn));
 	if(tok->tokenName == OPENBRACKET) {
 
 		if(!match(OPENBRACKET)) { synchType(NT_VAR); return ERROR_TYPE; }
@@ -842,8 +893,14 @@ struct varPrimeReturn * varPrime(int type) {
 			return ret;
 		}
 		//return the type which is being contained in the array
-		if(type == ARRAY_INT_TYPE || type == FP_ARRAY_INT_TYPE) { return INT_TYPE; }
-		else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE) { return REAL_TYPE; }
+		if(type == ARRAY_INT_TYPE || type == FP_ARRAY_INT_TYPE) { 
+			ret->type = INT_TYPE;
+			return ret; 
+		}
+		else if(type == ARRAY_REAL_TYPE || type == FP_ARRAY_REAL_TYPE) { 
+			ret->type = REAL_TYPE; 
+			return ret;
+		}
 		else { 
 			char *err =  malloc(sizeof(char) * 80);
 			snprintf(err, sizeof(char) * 80, "SEM ERR: Type %s is not an array and is not indexed\n", typeToString(type));
@@ -987,8 +1044,14 @@ int simExpPrime(int type) {
 		int generatedType = ERROR_TYPE;
 		//make sure only nums are being added or subtracted
 		if(addOp == ADD || addOp == SUBTRACT) {
-			if(!(type == INT_TYPE || type == REAL_TYPE || type == FP_INT_TYPE || type == FP_REAL_TYPE) || 
-				!(sType == INT_TYPE || sType == REAL_TYPE || sType == FP_INT_TYPE || sType == FP_REAL_TYPE))  {
+			if( ((sType == INT_TYPE || sType == FP_INT_TYPE) && (type == INT_TYPE || type == FP_INT_TYPE))  ||
+				((sType == REAL_TYPE || sType == FP_REAL_TYPE) && (type == REAL_TYPE || type == FP_REAL_TYPE)) ) { 
+				if(sType == REAL_TYPE || sType == FP_REAL_TYPE)
+					generatedType = REAL_TYPE; //any type real? total expr becomes real
+				else
+					generatedType = INT_TYPE; //else stays int
+			}
+			else{
 				char *err =  malloc(sizeof(char) * 80);
 				if(addOp == ADD)
 					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot add type %s to type %s\n", typeToString(type), typeToString(sType));
@@ -998,12 +1061,6 @@ int simExpPrime(int type) {
 					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
 			} 
-			else{
-				if(sType == REAL_TYPE || sType == FP_REAL_TYPE || type == REAL_TYPE || type == FP_REAL_TYPE)
-					generatedType = REAL_TYPE; //any type real? total expr becomes real
-				else
-					generatedType = INT_TYPE; //else stays int
-			}
 		}
 		//make sure only bools are being OR'd
 		if(addOp == OR) {
@@ -1057,8 +1114,14 @@ int termPrime(int termPIn) {
 		int fType = factor(termPIn);
 		int generatedType = ERROR_TYPE;
 		if(mulop == MULTIPLY || mulop == DIVIDE) {
-			if(!(termPIn == INT_TYPE || termPIn == REAL_TYPE || termPIn == FP_INT_TYPE || termPIn == FP_REAL_TYPE) || 
-				!(fType == INT_TYPE || fType == REAL_TYPE || fType == FP_INT_TYPE || fType == FP_REAL_TYPE)) {
+			if( ((termPIn == INT_TYPE || termPIn == FP_INT_TYPE) && (fType == INT_TYPE || fType == FP_INT_TYPE))  ||
+				((termPIn == REAL_TYPE || termPIn == FP_REAL_TYPE) && (fType == REAL_TYPE || fType == FP_REAL_TYPE)) ) { 
+				if(fType == REAL_TYPE || fType == FP_REAL_TYPE)
+					generatedType = REAL_TYPE; //any type real? total expr becomes real
+				else
+					generatedType = INT_TYPE; //else stays int
+			} 
+			else {
 				char *err =  malloc(sizeof(char) * 80);
 				if(mulop == MULTIPLY)
 					snprintf(err, sizeof(char) * 80, "SEM ERR: cannot multiply type %s to type %s\n", typeToString(termPIn), typeToString(fType));
@@ -1067,12 +1130,6 @@ int termPrime(int termPIn) {
 				if(fType != ERROR_TYPE && termPIn != ERROR_TYPE)
 					appendError(err, currLine);
 				generatedType = ERROR_TYPE;
-			} 
-			else {
-				if(fType == REAL_TYPE || fType == FP_REAL_TYPE || termPIn == REAL_TYPE || termPIn == FP_REAL_TYPE)
-					generatedType = REAL_TYPE; //any type real? total expr becomes real
-				else
-					generatedType = INT_TYPE; //else stays int
 			}
 		}
 		if(mulop == DIV || mulop == MOD) {
@@ -1190,6 +1247,11 @@ int matchId(int nt) {
             //no matching blue
             currGreen = currGreen->prev;
         }
+        int subSearch = matchIdInSubs(topGreen, tok->attribute->attrString);
+        if(subSearch != -1) {
+        	tok = getNextToken();
+        	return subSearch;
+        }
 		//did not find, throw error
 		tok = getNextToken();
 		return ERROR_TYPE;
@@ -1200,6 +1262,43 @@ int matchId(int nt) {
 	}
 }
 
+int matchIdInSubs(struct greenNode* start, char* id) {
+	struct greenNode* curr = start;
+	printf("matchIdInSubs:");
+	while(curr != NULL) {
+		printf("%s,",curr->id);
+		if(strcmp(curr->id, id) == 0 && curr->duplicate == 0){
+			printf("\n");
+			return curr->type;
+		}
+		int foundDeeper = 0;
+		if(curr->next != NULL) {
+			int subSearch = matchIdInSubs(curr->next,id);
+			if(subSearch != -1){
+				printf("\n");
+				return subSearch;
+			}
+		}
+		curr = curr->sibling;
+	}
+	return -1;
+}
+
+struct greenNode * findGreenInSubs(struct greenNode* start, char* id) {
+	struct greenNode* curr = start;
+	while(curr != NULL) {
+		if(strcmp(curr->id, id) == 0 && curr->duplicate == 0)
+			return curr;
+		int foundDeeper = 0;
+		if(curr->next != NULL) {
+			struct greenNode * deeper = findGreenInSubs(curr->next,id);
+			if(deeper != NULL)
+				return deeper;
+		}
+		curr = curr->sibling;
+	}
+	return NULL;
+}
 
 int factorPrime(char *id, int type) {
 	if(tok->tokenName == OPENPAREN) {
@@ -1222,7 +1321,10 @@ int factorPrime(char *id, int type) {
 				break;
 		}
 		if(currGreen == NULL) {
-			puts("tried to find method but could not. Should not happen");
+				currGreen = findGreenInSubs(topGreen, id);
+		}
+		if(currGreen == NULL) {
+			printf("tried to find method but could not. Should not happen. id: %s\n", id);
 			return ERROR_TYPE;
 		}
 		else 
@@ -1239,10 +1341,14 @@ int factorPrime(char *id, int type) {
 				return ERROR_TYPE;
 			}
 			//types don't match, error
+
 			if(typesEquivalent(currFunParam->type, currExpLstVal->val) == 0) {
+				printf("***%d\n",(currFunParam->type == REAL_TYPE || currFunParam->type == FP_REAL_TYPE));
+				printf("***%d\n",(currExpLstVal->val == REAL_TYPE || currExpLstVal->val == FP_REAL_TYPE));
+				printf("***%d\n", (1 || 1));
 				char *err = malloc(sizeof(char) * 80);
-				snprintf(err, sizeof(char) * 80,"SEM ERR function parameter %d should be %s but you passed %s\n", (currGreen->numParams - paramsToCheck), 
-					typeToString(currFunParam->type), typeToString(currExpLstVal->val));
+				snprintf(err, sizeof(char) * 80,"SEM ERR function parameter %d should be %s,%d but you passed %s,%d\n", (currGreen->numParams - paramsToCheck), 
+					typeToString(currFunParam->type),currFunParam->type, typeToString(currExpLstVal->val),currExpLstVal->val);
 				if(currExpLstVal->val != ERROR_TYPE)
 					appendError(err, currLine);
 				return ERROR_TYPE;
@@ -1305,8 +1411,10 @@ int factorPrime(char *id, int type) {
 				if(currGreen == NULL)
 					break;
 			}
+			if(currGreen == NULL) 
+				currGreen = findGreenInSubs(topGreen, id);
 			if(currGreen == NULL) {
-				puts("Tried to find green node in fuction' could not match");
+				printf("Tried to find green node in fuction' could not match id: %s", id);
 				return ERROR_TYPE;
 			}
 			if(currGreen->numParams > 0) {
@@ -1343,7 +1451,7 @@ void sign() {
 	}
 }
 
-void checkAddType(char *lexeme, int type) {
+void checkAddType(char *lexeme, int type, int size) {
 	//? do you need to add type in both places?
 
 	//add type to symbol table
@@ -1356,6 +1464,7 @@ void checkAddType(char *lexeme, int type) {
 	    while(currBlue != NULL) {
 	        if(strcmp(currBlue->id, lexeme) == 0) {
 	            currBlue->type = type;
+	            currBlue->size = size;
 	            break;
 	        }
 	        currBlue = currBlue->next;
@@ -1558,22 +1667,49 @@ struct greenNode *popGreenNode() {
     }
     else if(topGreen->prev == NULL) {
     	puts("just removed last thing from stack");
+    	//topGreen->firstBlue = NULL;
+    	printBlues(topGreen->firstBlue, topGreen->id);
         struct greenNode *ret = topGreen;
         topGreen = NULL;
         return ret;
     }
     else {
         struct greenNode *ret = topGreen;
+        //topGreen->firstBlue = NULL;
+        printBlues(topGreen->firstBlue, topGreen->id);
         topGreen = topGreen->prev;
         return ret;
     }
+}
+
+void printBlues(struct blueNode * first, char * scopeName) {
+	struct blueNode * curr = first;
+	int memLoc = 0;
+	fprintf(memFile, "Scope of %s\n", scopeName);
+	while(curr != NULL) {
+		if(curr->type != FP_REAL_TYPE && curr->type != FP_INT_TYPE && curr->type != FP_BOOL_TYPE
+			&& curr->type != FP_ARRAY_INT_TYPE && curr->type != FP_ARRAY_REAL_TYPE) {
+			fprintf(memFile, "loc: %d\t\tid: %s\n", memLoc, curr->id);
+			memLoc = memLoc + curr->size;
+		}
+		curr = curr->next;
+	}
 }
 
 void pushGreenNode(struct greenNode *newGreen) {
     if(topGreen == NULL) 
         topGreen = newGreen;
     else {
-        newGreen->prev = topGreen;
+    	newGreen->prev = topGreen;
+    	if(topGreen->next != NULL) {
+    		struct greenNode *currGreen = topGreen->next;
+    		while(currGreen->sibling != NULL){
+    			currGreen = currGreen->sibling;
+    		}
+    		currGreen->sibling = newGreen;
+    	}
+    	else
+        	topGreen->next = newGreen;
         topGreen = newGreen;
     }
 }
@@ -1606,14 +1742,39 @@ int checkAddGreenNode(struct greenNode *newGreen) {
                 }
                 currBlue = currBlue->next;
             }
-            //no matching blue
+            
             currGreen = currGreen->prev;
+        }
+        struct greenNode *firstGreen = topGreen;
+        while(firstGreen->prev != NULL) {
+        	firstGreen = firstGreen->prev;
+        }
+        if(searchAllGreens(firstGreen,newGreen->id) == 1) {
+        	newGreen->duplicate = 1;
+    	 	pushGreenNode(newGreen);
+			printf("Adding green node id='%s'\n", newGreen->id);
+            return 0;
         }
         //no matching blue or green, good to push on to stack
         pushGreenNode(newGreen);
         printf("Adding green node id='%s'\n", newGreen->id);
     }
     return 1;
+}
+
+int searchAllGreens(struct greenNode* start, char* id) {
+	struct greenNode* curr = start;
+	while(curr != NULL) {
+		if(strcmp(curr->id, id) == 0 && curr->duplicate == 0)
+			return 1;
+		int foundDeeper = 0;
+		if(curr->next != NULL) {
+			if(searchAllGreens(curr->next,id) == 1)
+				return 1;
+		}
+		curr = curr->sibling;
+	}
+	return 0;
 }
 
 int checkAddBlueNode(struct blueNode *newBlue) {
@@ -1623,6 +1784,12 @@ int checkAddBlueNode(struct blueNode *newBlue) {
         return 0;
     }
 
+   //no matching blue or green, good to add to linked list
+   if(topGreen->firstBlue == NULL) {
+       topGreen->firstBlue = newBlue;
+       return 1;
+   }
+
     struct blueNode *currBlue = topGreen->firstBlue;
     //check matching blue
     while(currBlue != NULL) {
@@ -1631,17 +1798,12 @@ int checkAddBlueNode(struct blueNode *newBlue) {
         }
         currBlue = currBlue->next;
     }
+	currBlue = topGreen->firstBlue;
+	 while(currBlue->next != NULL) {
+        currBlue = currBlue->next;
+    }
+	currBlue->next = newBlue;
 
-    //no matching blue or green, good to add to linked list
-   if(topGreen->firstBlue == NULL) {
-       topGreen->firstBlue = newBlue;
-       return 1;
-   }
-   struct blueNode *emptyBlue = topGreen->firstBlue;
-   while(emptyBlue->next != NULL) {
-       emptyBlue = emptyBlue->next;
-   }
-   emptyBlue->next = newBlue;
    printf("Adding blue node id='%s'\n", newBlue->id);
    return 1;
 }

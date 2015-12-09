@@ -124,6 +124,16 @@ struct varReturn {
 	char *lexeme;
 };
 
+struct varPrimeReturn {
+	int type;
+	int arraySize;
+};
+
+struct typeReturn {
+	int type;
+	int size;
+};
+
 struct node {
 	char *id;
 	int type;
@@ -132,7 +142,7 @@ struct node {
 
 struct blueNode {
     int type;
-    int arraySize;
+    int size;
     char *id;
     struct blueNode *next;
 };
@@ -150,6 +160,8 @@ struct greenNode {
     char *id;
     struct blueNode *firstBlue;
     struct greenNode *prev;
+    struct greenNode *next;
+    struct greenNode *sibling;
 } *topGreen;
 
 struct errorNode {

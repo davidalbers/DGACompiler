@@ -27,8 +27,8 @@
 27:	
 28:	     begin
 29:	       a:= fun1(x, e, c, b);
+SEM ERR: identifier 'fun1' has not been declared
 30:	       x:= fun3(c[1], e);
-SEM ERR: identifier 'fun3' has not been declared
 31:	       e := e + 4.44;
 32:	       a:= (a mod y) div x;
 33:	       while ((a >= 4) and ((b <= e) 
@@ -41,9 +41,7 @@ SEM ERR: identifier 'fun3' has not been declared
 40:	
 41:	begin
 42:	  b:= fun2(c[4], c[5]);
-SEM ERR: identifier 'fun2' has not been declared
 43:	  b:= fun2(c[4],2);
-SEM ERR: identifier 'fun2' has not been declared
 44:	  if (a < 2) then a:= 1 else a := a + 2;
 45:	  if (b > 4.2) then a := c[a]
 46:	end.

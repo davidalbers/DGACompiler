@@ -1,17 +1,44 @@
-program testProg (a);
-    function testSub(d : integer) : integer ;
-        function inner(b : integer) : integer ;
-        var c : integer;
-        begin
-        	c := testSub(c);
-        	c := testSub(b);
-        	b := testSub(c);
-        	inner := c;
-        	testSub := c;
-        	inner := b
-
-        end;
+program testProg (input, output);
+	var a : integer;
+	var r : array [1..2] of integer;
+	var s : array [1..2] of integer;
+    function inner(b : integer) : integer ;
+	var c : integer;
+	var f : real;
+	var a : integer;
     begin
+    	c := inner(b);
+    	inner := c;
+    	c := inner(b);
+    	c := inner2(b);
+    	a := 1;
+    	b := 1;
+    	c := 1;
+    	c := 1 + 1;
+    	c := 1 + 1;
+    	f := 1 + 1.0
+    end;
+    function inner2(d : integer) : integer ;
+    var e : integer;
+    begin
+   		d := inner(e);
+    	inner := e;
+    	d := inner(e);
+    	d := inner2(e);
+    	a := 1;
+    	b := 1;
+    	c := 1;
+    	d := 1;
+    	e := 1
     end;
 begin
+   	a := inner(a);
+	inner := a;
+	a := inner(a);
+	a := inner2(a);
+	a := 1;
+	b := 1;
+	c := 1;
+	d := 1;
+	e := 1
 end .

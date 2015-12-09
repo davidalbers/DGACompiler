@@ -1,0 +1,10 @@
+Scope of fun1
+loc: 0		id: d
+Scope of fun3
+loc: 0		id: e
+Scope of fun2
+loc: 0		id: e
+Scope of test
+loc: 0		id: a
+loc: 4		id: b
+loc: 12		id: c
