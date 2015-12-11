@@ -47,7 +47,7 @@ int termPrime();
 int factor();
 int matchNum(int nt);
 int matchId(int nt);
-int factorPrime(char *id, int type);
+int factorPrime(char *id, int type, int lineOccurred);
 void sign();
 int synch(struct token * tok, int syncingType);
 void synchType(int syncingType);
@@ -580,12 +580,14 @@ void subPrgHeadPrime() {
 	if(tok->tokenName == OPENPAREN) {
 		args();
 		if(!match(COLON)) {synchType(NT_SUBPRGHEAD); return;}
-		stdType();
+		int type = stdType();
+		topGreen->returnType = type;
 		if(!match(SEMICOLON)) {synchType(NT_SUBPRGHEAD); return;}
 	}
 	else if(tok->tokenName == COLON) {
 		if(!match(COLON)) {synchType(NT_SUBPRGHEAD); return;}
-		stdType();
+		int type = stdType();
+		topGreen->returnType = type;
 		if(!match(SEMICOLON)) {synchType(NT_SUBPRGHEAD); return;}
 	}
 	else {
@@ -762,6 +764,7 @@ void stmt() {
 		struct varReturn *vType = var();
 		if(!match(ASSIGNOP)) {synchType(NT_STMT); return;}
 		int eType = expr();
+		printf("comparing types for %s, %d, %d, line %d\n", vType->lexeme, vType->type, eType, currLine);
 		if(eType != ERROR_TYPE && vType->type != ERROR_TYPE) {
 			if(typesEquivalent(vType->type, eType) == 0) {
 				char *err =  malloc(sizeof(char) * 160);
@@ -858,6 +861,7 @@ struct varReturn *var() {
 				puts("Tried to find green node in fuction' could not match");
 				return ERROR_TYPE;
 			}
+			printf("got type in var %d\n", currGreen->returnType);
 			ret->type = currGreen->returnType;
 			ret->lexeme = lexeme;
 			return ret;
@@ -984,11 +988,8 @@ int exprPrime(int type) {
 		int currLine =tokenizingLine;
 		int sType = simExp();
 		int generatedType = BOOL_TYPE;
-		if(sType != INT_TYPE && sType != REAL_TYPE && sType != ERROR_TYPE) {
-			char *err =  malloc(sizeof(char) * 160);
-			snprintf(err, sizeof(char) * 160, "SEM ERR: cannot apply relation operators to type %s\n", typeToString(sType));
-			appendError(err, currLine);
-			generatedType = ERROR_TYPE;
+		if((sType == INT_TYPE && type == INT_TYPE) || (sType == REAL_TYPE && type == REAL_TYPE) ) {
+			return generatedType;
 		}
 		if (type != INT_TYPE && type != REAL_TYPE && type != ERROR_TYPE) {
 			char *err =  malloc(sizeof(char) * 160);
@@ -996,7 +997,18 @@ int exprPrime(int type) {
 			appendError(err, currLine);
 			generatedType = ERROR_TYPE;
 		}
-		return generatedType;
+		if(sType != INT_TYPE && sType != REAL_TYPE && sType != ERROR_TYPE) {
+			char *err =  malloc(sizeof(char) * 160);
+			snprintf(err, sizeof(char) * 160, "SEM ERR: cannot apply relation operators to type %s\n", typeToString(sType));
+			appendError(err, currLine);
+			generatedType = ERROR_TYPE;
+		}
+		else {
+			char *err =  malloc(sizeof(char) * 160);
+			snprintf(err, sizeof(char) * 160, "SEM ERR: cannot relate %s to %s\n",typeToString(type), typeToString(sType));
+			appendError(err, currLine);
+			generatedType = ERROR_TYPE;
+		}
 	}
 	else {
 		printSynerr("relop, close paren, semicolon, end, CLOSEBRACKET, then, do, comma, else", "expression");
@@ -1189,7 +1201,7 @@ int factor() {
 			strcat(err, "' has not been declared\n");
 			appendError(err, currLine);
 		}
-		return factorPrime(lexeme, idType);
+		return factorPrime(lexeme, idType, currLine);
 	}
 	else if(tok->tokenName == NUM) {
 
@@ -1342,7 +1354,7 @@ struct greenNode * findGreenInSubs(struct greenNode* start, char* id) {
 	return NULL;
 }
 
-int factorPrime(char *id, int type) {
+int factorPrime(char *id, int type, int lineOccurred) {
 	if(tok->tokenName == OPENPAREN) {
 		int generatedType = ERROR_TYPE;
 		if(!match(OPENPAREN)) {synchType(NT_FACTOR); return ERROR_TYPE;}
@@ -1465,11 +1477,12 @@ int factorPrime(char *id, int type) {
 				printf("Tried to find green node in fuction' could not match id: %s", id);
 				return ERROR_TYPE;
 			}
+			printf("calling method %s with %d params", currGreen->id, currGreen->numParams);
 			if(currGreen->numParams > 0) {
 				//exp is not an int
 	            char *err =  malloc(sizeof(char) * 80);
 	            snprintf(err, sizeof(char) * 80, "SEM ERR calling method with no params\n");
-	            appendError(err, (tokenizingLine-1));
+	            appendError(err, (lineOccurred));
 				return ERROR_TYPE;
 			}
 			return currGreen->returnType;
@@ -1745,6 +1758,7 @@ void printBlues(struct blueNode * first, char * scopeName) {
 }
 
 void pushGreenNode(struct greenNode *newGreen) {
+	printf("pushing green %s with type %d",newGreen->id,newGreen->returnType);
     if(topGreen == NULL) 
         topGreen = newGreen;
     else {
